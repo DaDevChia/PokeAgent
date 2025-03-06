@@ -231,9 +231,6 @@
             socket.on('connect', () => {
                 statusEl.textContent = 'Connected';
                 statusEl.style.color = '#0f0';
-                
-                // Start updating the game screen
-                updateGameScreen();
             });
             
             socket.on('disconnect', () => {
@@ -251,22 +248,7 @@
                     }
                 }
             });
-            
-            // Update game screen
-            function updateGameScreen() {
-                fetch('/api/screen?format=base64')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.image) {
-                            gameScreen.src = `data:image/png;base64,${data.image}`;
-                        }
-                        setTimeout(updateGameScreen, 100); // Update every 100ms
-                    })
-                    .catch(error => {
-                        console.error('Error updating screen:', error);
-                        setTimeout(updateGameScreen, 1000); // Retry after 1s on error
-                    });
-            }
+           
             
             // Add button event listeners
             Object.keys(buttons).forEach(btnId => {

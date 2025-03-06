@@ -1,8 +1,14 @@
 import os
+# Force SDL audio to use a dummy driver (prevents sound initialization)
+os.environ["SDL_AUDIODRIVER"] = "dummy"
+
+import logging
+# Mute sound logging from PyBoy (suppress CRITICAL messages)
+logging.getLogger('pyboy.core.sound').handlers.clear()
+
 import time
 import json
-import shutil
-from pathlib import Path
+import threading
 from flask import Flask, jsonify, request, send_file, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -11,29 +17,42 @@ from io import BytesIO
 from pyboy import PyBoy
 from PIL import Image
 import base64
-import numpy as np
 
 from pokemon_helper import PokemonHelper
 
-# PokeAgent main class
 class PokeAgent:
-    def __init__(self, rom_path, save_state_path=None):
+    def __init__(self, rom_path, window_type="SDL2"):
         self.rom_path = rom_path
-        self.save_state_path = save_state_path
-        self.pyboy = PyBoy(rom_path)
-        
-        # Load save state if provided
-        if save_state_path and os.path.exists(save_state_path):
-            with open(save_state_path, "rb") as f:
-                self.pyboy.load_state(f)
-        
-        # Initialize the game
-        self.pyboy.tick()
-        
-        # Initialize Pokemon helper
-        self.pokemon_helper = PokemonHelper(self.pyboy)
-        
-        # Memory address constants for Pokemon Red
+        self.pyboy = None
+        self.init_lock = threading.Event()
+        self.emu_thread = threading.Thread(target=self._run_emulator,
+                                           args=(rom_path, window_type),
+                                           daemon=True)
+        self.emu_thread.start()
+        self.init_lock.wait()  # Wait until PyBoy is initialized
+
+        try:
+            self.pokemon_helper = PokemonHelper(self.pyboy)
+        except Exception as e:
+            print("Warning: Could not initialize Pokemon helper:", e)
+            class DummyHelper:
+                def __init__(self):
+                    self.map_data = {}
+                def is_game_loaded(self):
+                    return False
+                def get_map_location(self):
+                    return {"error": "Pokemon helper not available"}
+                def get_detailed_party(self):
+                    return {"error": "Pokemon helper not available"}
+                def get_walkable_tiles(self):
+                    return {"error": "Pokemon helper not available"}
+                def get_tiles(self):
+                    return {"error": "Pokemon helper not available"}
+                def navigate_to(self, *args, **kwargs):
+                    return {"error": "Pokemon helper not available"}
+            self.pokemon_helper = DummyHelper()
+
+        # Memory constants (Pokemon Red)
         self.PLAYER_X = 0xD362
         self.PLAYER_Y = 0xD361
         self.MAP_ID = 0xD35E
@@ -45,68 +64,63 @@ class PokeAgent:
         self.POKEMON_SPECIES_ADDRESSES = [0xD164, 0xD165, 0xD166, 0xD167, 0xD168, 0xD169]
         self.EVENT_FLAGS_START = 0xD747
         self.EVENT_FLAGS_END = 0xD87E
-        
-        # Last button pressed
+
         self.last_button = None
-        
-        # Load event names
+
         self.event_names = {}
-        event_json_path = "events.json"
-        if os.path.exists(event_json_path):
-            with open(event_json_path, "r") as f:
+        if os.path.exists("events.json"):
+            with open("events.json", "r") as f:
                 self.event_names = json.load(f)
-    
+
+    def _run_emulator(self, rom_path, window_type):
+        # Create PyBoy with sound disabled; SDL_AUDIODRIVER is already set to "dummy"
+        self.pyboy = PyBoy(rom_path, window=window_type, debug=False, sound_emulated=True)
+        self.pyboy.set_emulation_speed(1)
+        self.pyboy.tick()  # Kick off initialization
+        self.init_lock.set()  # Signal that PyBoy is ready
+        while True:
+            self.pyboy.tick()
+            time.sleep(0.01)
+
     def tick(self, n=1):
-        """Process n frames"""
         return self.pyboy.tick(n)
-    
+
     def button(self, input_key, delay=1):
-        """Press a button and release after delay ticks"""
         valid_buttons = ["a", "b", "start", "select", "left", "right", "up", "down"]
         if input_key not in valid_buttons:
             raise ValueError(f"Invalid input: {input_key}. Must be one of {valid_buttons}")
-        
         self.last_button = input_key
         self.pyboy.button(input_key)
         self.pyboy.tick(delay)
-        
         return True
-    
+
     def get_screen_image(self):
-        """Get the current screen as a PIL Image"""
-        screen_image = self.pyboy.screen.image.copy()
-        return screen_image
-    
+        return self.pyboy.screen.image.copy()
+
     def get_screen_base64(self):
-        """Get the current screen as a base64 encoded string"""
         image = self.get_screen_image()
         buffered = BytesIO()
-        image = image.resize((320, 288), Image.NEAREST)  # Upscaling for better visibility
+        image = image.resize((320, 288), Image.NEAREST)
         image.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode('utf-8')
-    
+
     def get_player_position(self):
-        """Get the player's position and current map"""
         x = self.pyboy.memory[self.PLAYER_X]
         y = self.pyboy.memory[self.PLAYER_Y]
         map_id = self.pyboy.memory[self.MAP_ID]
         return {"x": x, "y": y, "map_id": map_id}
-    
+
     def read_hp(self, start_address):
-        """Read HP value (2 bytes) from memory"""
         return 256 * self.pyboy.memory[start_address] + self.pyboy.memory[start_address + 1]
-    
+
     def get_party_info(self):
-        """Get information about the Pokémon party"""
         party_size = self.pyboy.memory[self.PARTY_SIZE]
         pokemon = []
-        
         for i in range(min(party_size, 6)):
             species_id = self.pyboy.memory[self.POKEMON_SPECIES_ADDRESSES[i]]
             level = self.pyboy.memory[self.POKEMON_LEVEL_ADDRESSES[i]]
             current_hp = self.read_hp(self.CURRENT_HP_ADDRESSES[i])
             max_hp = self.read_hp(self.MAX_HP_ADDRESSES[i])
-            
             pokemon.append({
                 "species_id": species_id,
                 "level": level,
@@ -114,36 +128,22 @@ class PokeAgent:
                 "max_hp": max_hp,
                 "hp_percent": current_hp / max(max_hp, 1) * 100
             })
-        
-        return {
-            "party_size": party_size,
-            "pokemon": pokemon
-        }
-    
+        return {"party_size": party_size, "pokemon": pokemon}
+
     def get_badges(self):
-        """Get the badges the player has obtained"""
         badges_byte = self.pyboy.memory[self.BADGES]
         badges = []
         badge_names = ["Boulder", "Cascade", "Thunder", "Rainbow", "Soul", "Marsh", "Volcano", "Earth"]
-        
         for i in range(8):
             if (badges_byte >> i) & 1:
                 badges.append(badge_names[i])
-        
-        return {
-            "badges_byte": badges_byte,
-            "badges": badges,
-            "count": len(badges)
-        }
-    
+        return {"badges_byte": badges_byte, "badges": badges, "count": len(badges)}
+
     def read_bit(self, addr, bit):
-        """Read a specific bit from a memory address"""
         return bin(256 + self.pyboy.memory[addr])[-bit - 1] == "1"
-    
+
     def get_event_flags(self):
-        """Get all event flags that are set"""
         event_flags = {}
-        
         for address in range(self.EVENT_FLAGS_START, self.EVENT_FLAGS_END):
             val = self.pyboy.memory[address]
             for idx in range(8):
@@ -151,11 +151,9 @@ class PokeAgent:
                     key = f"0x{address:X}-{idx}"
                     flag_name = self.event_names.get(key, "Unknown")
                     event_flags[key] = flag_name
-        
         return event_flags
-    
+
     def get_game_state(self):
-        """Get a comprehensive game state"""
         return {
             "position": self.get_player_position(),
             "party": self.get_party_info(),
@@ -163,14 +161,11 @@ class PokeAgent:
             "events": self.get_event_flags(),
             "last_button": self.last_button
         }
-    
+
     def move_to_location(self, target_x, target_y, max_steps=100):
-        """Try to move to a specific location on the current map"""
         steps_taken = 0
         current_pos = self.get_player_position()
-        
         while (current_pos["x"] != target_x or current_pos["y"] != target_y) and steps_taken < max_steps:
-            # Choose direction based on current position
             if current_pos["x"] < target_x:
                 self.button("right")
             elif current_pos["x"] > target_x:
@@ -179,42 +174,20 @@ class PokeAgent:
                 self.button("down")
             elif current_pos["y"] > target_y:
                 self.button("up")
-            
-            # Update position and counter
             steps_taken += 1
             current_pos = self.get_player_position()
-        
-        return steps_taken < max_steps  # Return True if we reached the destination
-    
-    def save_state(self, path=None):
-        """Save the current game state"""
-        save_path = path or self.save_state_path or "save_state.state"
-        with open(save_path, "wb") as f:
-            self.pyboy.save_state(f)
-        return save_path
-    
-    def load_state(self, path=None):
-        """Load a game state"""
-        load_path = path or self.save_state_path
-        if load_path and os.path.exists(load_path):
-            with open(load_path, "rb") as f:
-                self.pyboy.load_state(f)
-            return True
-        return False
-    
+        return steps_taken < max_steps
+
     def close(self):
-        """Close the PyBoy instance"""
         if self.pyboy:
             self.pyboy.stop()
 
-# Initialize Flask app
+# Flask setup
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Global PokeAgent instance
-agent = None
-
+# Define your Flask routes (unchanged)
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -223,28 +196,12 @@ def index():
 def controller():
     return render_template('controller.html')
 
-@app.route('/api/init', methods=['POST'])
-def init_agent():
-    global agent
-    
-    data = request.json
-    rom_path = data.get('rom_path', 'PokemonRed.gb')
-    save_state_path = data.get('save_state_path')
-    
-    if agent:
-        agent.close()
-    
-    agent = PokeAgent(rom_path, save_state_path)
-    return jsonify({"status": "success", "message": "PokeAgent initialized"})
-
 @app.route('/api/screen', methods=['GET'])
 def get_screen():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
-    format_type = request.args.get('format', 'base64')
-    
-    if format_type == 'base64':
+    fmt = request.args.get('format', 'base64')
+    if fmt == 'base64':
         img_data = agent.get_screen_base64()
         return jsonify({"image": img_data})
     else:
@@ -258,14 +215,11 @@ def get_screen():
 def press_button():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     data = request.json
     button = data.get('button')
     delay = data.get('delay', 1)
-    
     try:
         result = agent.button(button, delay)
-        # Emit the button press event to all connected clients
         socketio.emit('button_press', {'button': button})
         return jsonify({"status": "success", "button": button, "result": result})
     except ValueError as e:
@@ -275,51 +229,42 @@ def press_button():
 def get_state():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify(agent.get_game_state())
 
 @app.route('/api/position', methods=['GET'])
 def get_position():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify(agent.get_player_position())
 
 @app.route('/api/party', methods=['GET'])
 def get_party():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify(agent.get_party_info())
 
 @app.route('/api/badges', methods=['GET'])
 def get_badges():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify(agent.get_badges())
 
 @app.route('/api/events', methods=['GET'])
 def get_events():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify(agent.get_event_flags())
 
 @app.route('/api/move', methods=['POST'])
 def move_to_location():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     data = request.json
     target_x = data.get('x')
     target_y = data.get('y')
     max_steps = data.get('max_steps', 100)
-    
     if target_x is None or target_y is None:
         return jsonify({"error": "Target coordinates required"}), 400
-    
-    # Use the Pokemon Helper for navigation if available
     if agent.pokemon_helper.is_game_loaded():
         result = agent.pokemon_helper.navigate_to(target_x, target_y, max_steps)
         return jsonify(result)
@@ -331,59 +276,31 @@ def move_to_location():
             "current_position": agent.get_player_position()
         })
 
-@app.route('/api/save', methods=['POST'])
-def save_state():
-    if not agent:
-        return jsonify({"error": "PokeAgent not initialized"}), 400
-    
-    data = request.json
-    path = data.get('path')
-    
-    save_path = agent.save_state(path)
-    return jsonify({"status": "success", "save_path": save_path})
-
-@app.route('/api/load', methods=['POST'])
-def load_state():
-    if not agent:
-        return jsonify({"error": "PokeAgent not initialized"}), 400
-    
-    data = request.json
-    path = data.get('path')
-    
-    result = agent.load_state(path)
-    return jsonify({"status": "success" if result else "failure"})
-
 @app.route('/api/tick', methods=['POST'])
 def tick():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     data = request.json
     n = data.get('n', 1)
-    
     agent.tick(n)
     return jsonify({"status": "success", "ticks": n})
 
-# Pokemon-specific API endpoints
 @app.route('/api/pokemon/location', methods=['GET'])
 def get_pokemon_location():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify(agent.pokemon_helper.get_map_location())
 
 @app.route('/api/pokemon/party', methods=['GET'])
 def get_pokemon_party():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify(agent.pokemon_helper.get_detailed_party())
 
 @app.route('/api/pokemon/tiles', methods=['GET'])
 def get_pokemon_tiles():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     return jsonify({
         "walkable": agent.pokemon_helper.get_walkable_tiles(),
         "tiles": agent.pokemon_helper.get_tiles()
@@ -393,10 +310,8 @@ def get_pokemon_tiles():
 def get_pokemon_maps():
     if not agent:
         return jsonify({"error": "PokeAgent not initialized"}), 400
-    
     if not hasattr(agent.pokemon_helper, 'map_data'):
         return jsonify({"error": "Map data not available"}), 400
-    
     return jsonify(agent.pokemon_helper.map_data)
 
 @socketio.on('connect')
@@ -407,14 +322,13 @@ def handle_connect():
 def handle_disconnect():
     pass
 
-# Ensure agent is properly closed when application exits
 import atexit
-
 @atexit.register
 def cleanup():
-    global agent
     if agent:
         agent.close()
 
+# Create the global agent only once by disabling the reloader.
 if __name__ == '__main__':
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    agent = PokeAgent("PokemonRed.gb", window_type="SDL2")
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False)

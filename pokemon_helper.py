@@ -2,7 +2,8 @@ from pathlib import Path
 import json
 import numpy as np
 from pyboy import PyBoy
-from pyboy.plugins.game_wrapper_pokemon_gen1 import GameWrapperPokemonGen1
+# Import the base plugin class to check API
+from pyboy.plugins.base_plugin import PyBoyPlugin
 
 class PokemonHelper:
     """Helper class to interact with the Pokemon game specifically"""
@@ -12,12 +13,34 @@ class PokemonHelper:
         self.pyboy = pyboy_instance
         self.wrapper = None
         
-        # If wrapper not found, attempt to initialize it
-        if not self.wrapper:
-            self.wrapper = GameWrapperPokemonGen1(self.pyboy)
-            if not self.wrapper.enabled():
+        # Try to initialize the wrapper with the proper API
+        try:
+            # First try importing to check if it exists
+            from pyboy.plugins.game_wrapper_pokemon_gen1 import GameWrapperPokemonGen1
+            
+            # Check the class signature
+            try:
+                # New API (with 3 arguments)
+                # Common pattern for PyBoy plugins is (pyboy, mb, game_wrapper)
+                # where mb is the motherboard and game_wrapper is the parent wrapper
+                self.wrapper = GameWrapperPokemonGen1(
+                    self.pyboy, 
+                    self.pyboy.mb, 
+                    self.pyboy.game_wrapper()
+                )
+            except TypeError:
+                # Fallback to trying with 2 arguments
+                try:
+                    self.wrapper = GameWrapperPokemonGen1(self.pyboy, self.pyboy.mb)
+                except TypeError:
+                    print("WARNING: Could not initialize Pokemon wrapper - incompatible API")
+            
+            # Check if wrapper was initialized and enabled
+            if self.wrapper and not self.wrapper.enabled():
                 self.wrapper = None
                 print("WARNING: Pokemon Red/Blue game not detected!")
+        except ImportError:
+            print("WARNING: GameWrapperPokemonGen1 not available in this version of PyBoy")
         
         # Load map data for location information
         self.map_data = {}
