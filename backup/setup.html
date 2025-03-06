@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS HLS Setup Guide - PokeAgent</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        h1 {
+            color: #e91e63;
+            border-bottom: 2px solid #e91e63;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #2196F3;
+            margin-top: 30px;
+        }
+        
+        .step {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .step h3 {
+            margin-top: 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+        
+        .step-number {
+            background-color: #e91e63;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .note {
+            background-color: #fff8e1;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .important {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .tip {
+            background-color: #e8f5e9;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        code {
+            background-color: #f1f1f1;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, Monaco, 'Andale Mono', monospace;
+        }
+        
+        pre {
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border: 1px solid #ddd;
+        }
+        
+        img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin: 15px 0;
+            border: 1px solid #ddd;
+        }
+        
+        .back-button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        
+        .back-button:hover {
+            background-color: #0b7dda;
+        }
+        
+        .highlight {
+            background-color: #ffecb3;
+            padding: 2px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>OBS HLS Setup Guide for PokeAgent</h1>
+    
+    <p>This guide will help you set up OBS Studio to capture your PyBoy emulator window and stream it using HLS (HTTP Live Streaming) - perfect for remote access via Tailscale.</p>
+    
+    <div class="important">
+        <strong>Important Path Information:</strong> The OBS HLS output must go to the <code>static/hls</code> directory in your PokeAgent folder. This is where the web server looks for the stream files.
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">1</span> Install OBS Studio</h3>
+        <p>Download and install <a href="https://obsproject.com/" target="_blank">OBS Studio</a> if you haven't already. This guide assumes OBS version 29.0 or newer.</p>
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">2</span> Find Your PokeAgent Path</h3>
+        <p>First, determine the full path to your PokeAgent folder. You'll need this for configuring the HLS output location.</p>
+        
+        <p>For example, if your project is at:</p>
+        <code>C:\Users\Username\Projects\pokeagent</code>
+        
+        <p>Then your HLS output path should be:</p>
+        <code>C:\Users\Username\Projects\pokeagent\static\hls</code>
+        
+        <div class="tip">
+            <strong>Tip:</strong> You can find the full path by opening a command prompt or terminal in your PokeAgent folder and running:
+            <ul>
+                <li>Windows: <code>cd</code> (shows current directory)</li>
+                <li>macOS/Linux: <code>pwd</code> (print working directory)</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">3</span> Capture the PyBoy Window</h3>
+        <p>In OBS:</p>
+        <ol>
+            <li>Under the "Sources" panel, click the "+" button</li>
+            <li>Select "Window Capture" (or "Game Capture" if that works better)</li>
+            <li>Choose a name like "PyBoy Capture" and click OK</li>
+            <li>In the properties window, select the PyBoy window from the dropdown</li>
+            <li>Make sure "Capture Cursor" is unchecked</li>
+            <li>Click OK to add the source</li>
+        </ol>
+        
+        <p>Resize and position the PyBoy window in the preview area:</p>
+        <ol>
+            <li>Hold Alt while resizing to ignore aspect ratio (if needed)</li>
+            <li>Position it to be centered in the frame</li>
+            <li>Right-click the source and select "Transform" → "Fit to screen" if needed</li>
+        </ol>
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">4</span> Configure NVENC For Encoding</h3>
+        <p>To use your RTX 4090 for encoding:</p>
+        <ol>
+            <li>Go to Settings → Output</li>
+            <li>Set Output Mode to "Advanced"</li>
+            <li>Under the "Streaming" tab:
+                <ul>
+                    <li>Encoder: NVIDIA NVENC H.264</li>
+                    <li>Rate Control: CBR</li>
+                    <li>Bitrate: 3000-6000 Kbps</li>
+                    <li>Keyframe Interval: 2</li>
+                    <li>Preset: Max Quality or Low-Latency Performance</li>
+                    <li>Profile: high</li>
+                    <li>Look-ahead and Psycho Visual Tuning: enabled</li>
+                    <li>GPU: 0 (unless you have multiple GPUs)</li>
+                    <li>Max B-frames: 2</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">5</span> Set Up Custom HLS Output</h3>
+        <p>OBS doesn't include HLS output by default, but you can set it up with custom output settings:</p>
+        
+        <ol>
+            <li>In OBS, go to Settings → Output</li>
+            <li>Make sure you're in Advanced mode</li>
+            <li>Go to the Recording tab</li>
+            <li>Set "Type" to "Custom Output (FFmpeg)"</li>
+            <li>Set "FFmpeg Output Type" to "Output to URL"</li>
+            <li>Set "File path or URL" to: <code>file://YOUR_FULL_PATH/static/hls/stream.m3u8</code>
+                <div class="note">Replace <code>YOUR_FULL_PATH</code> with the actual path to your PokeAgent folder</div>
+            </li>
+            <li>Set "Container Format" to: <code>hls</code></li>
+            <li>Under "Muxer Settings" add these parameters:
+                <pre>hls_time=2 hls_list_size=5 hls_flags=delete_segments+append_list hls_allow_cache=0 hls_segment_type=mpegts</pre>
+            </li>
+            <li>Make sure "Video Encoder" is set to use NVENC</li>
+            <li>Video Encoder Settings can be left empty (it will use the Streaming settings)</li>
+            <li>Set "Audio Encoder" to "No Audio" (we don't need audio for the Game Boy)</li>
+        </ol>
+        
+        <div class="important">
+            <strong>Windows Path Example:</strong> If your PokeAgent is at <code>C:\Users\Username\Projects\pokeagent</code>, then your URL should be:
+            <pre>file://C:/Users/Username/Projects/pokeagent/static/hls/stream.m3u8</pre>
+            
+            <strong>Note:</strong> Use forward slashes (/) even on Windows, not backslashes (\).
+        </div>
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">6</span> Start Recording</h3>
+        <p>To start the HLS stream:</p>
+        <ol>
+            <li>Click the "Start Recording" button in OBS</li>
+            <li>This will generate HLS files in your <code>static/hls</code> directory</li>
+            <li>The web interface should automatically detect and play the stream</li>
+        </ol>
+        
+        <div class="note">
+            <strong>Note:</strong> We're using OBS's recording feature to generate the HLS stream, not the streaming feature. This is because the custom FFmpeg output is only available in the recording section.
+        </div>
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">7</span> Check That It's Working</h3>
+        <p>To verify everything is working properly:</p>
+        <ol>
+            <li>In your PokeAgent folder, check that files are being created in <code>static/hls</code></li>
+            <li>You should see <code>stream.m3u8</code> and several <code>.ts</code> segment files</li>
+            <li>Refresh your PokeAgent web interface to see if the stream appears</li>
+        </ol>
+    </div>
+    
+    <div class="step">
+        <h3><span class="step-number">8</span> Access via Tailscale</h3>
+        <p>To access your PyBoy remotely:</p>
+        <ol>
+            <li>Install Tailscale on both your server and client devices</li>
+            <li>Sign in to Tailscale on both devices to connect them to your private network</li>
+            <li>From your client device, access PokeAgent using the Tailscale IP:
+                <pre>http://[tailscale-ip]:5000</pre>
+            </li>
+            <li>The HLS stream will work over Tailscale without any additional configuration</li>
+        </ol>
+        <div class="tip">
+            <strong>Tip:</strong> To find your Tailscale IP, open the Tailscale app or run <code>tailscale ip</code> in a terminal.
+        </div>
+    </div>
+    
+    <h2>Troubleshooting</h2>
+    
+    <table>
+        <tr>
+            <th>Problem</th>
+            <th>Solution</th>
+        </tr>
+        <tr>
+            <td>No stream files in <code>static/hls</code> folder</td>
+            <td>
+                <ul>
+                    <li>Double-check your file path in OBS</li>
+                    <li>Make sure the folder exists and is writable</li>
+                    <li>Check OBS logs for file output errors</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>Stream not appearing in web interface</td>
+            <td>
+                <ul>
+                    <li>Refresh the page</li>
+                    <li>Click the "Refresh Stream" button</li>
+                    <li>Check browser console for HLS errors</li>
+                    <li>Verify files exist in the <code>static/hls</code> folder</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>High latency or stuttering</td>
+            <td>
+                <ul>
+                    <li>Reduce <code>hls_time</code> to 1 for lower latency</li>
+                    <li>Increase bitrate in OBS settings</li>
+                    <li>Try different NVENC presets</li>
+                </ul>
+            </td>
+        </tr>
+        <tr>
+            <td>Tailscale connection issues</td>
+            <td>
+                <ul>
+                    <li>Make sure both devices are connected to Tailscale</li>
+                    <li>Check Tailscale's connectivity status</li>
+                    <li>Verify your server's firewall allows port 5000</li>
+                </ul>
+            </td>
+        </tr>
+    </table>
+    
+    <div class="tip">
+        <strong>Performance Tip:</strong> Your RTX 4090 has dedicated NVENC encoding hardware that won't impact game performance. You can safely use the "Max Quality" preset.
+    </div>
+    
+    <a href="/" class="back-button">Return to PokeAgent</a>
+</body>
+</html>

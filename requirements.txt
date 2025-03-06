@@ -1,0 +1,10 @@
+setuptools
+Flask
+Flask-Cors
+pyboy
+Pillow
+numpy
+python-socketio
+flask-socketio
+eventlet
+requests

@@ -1,0 +1,5 @@
+<svg width="320" height="288" viewBox="0 0 320 288" xmlns="http://www.w3.org/2000/svg">
+  <rect width="320" height="288" fill="#0f380f" />
+  <text x="160" y="144" font-family="'Press Start 2P', monospace" font-size="24" fill="#9bbc0f" text-anchor="middle">PokeAgent</text>
+  <text x="160" y="174" font-family="'Press Start 2P', monospace" font-size="12" fill="#9bbc0f" text-anchor="middle">Press INIT to start</text>
+</svg>

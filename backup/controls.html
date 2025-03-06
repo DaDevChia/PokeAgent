@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokeAgent Controls</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        h1 {
+            color: #e91e63;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .controls-container {
+            width: 100%;
+            max-width: 400px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .connection-status {
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .connection-status.connected {
+            color: green;
+        }
+        
+        .connection-status.disconnected {
+            color: red;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 5px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 80px);
+            gap: 20px;
+        }
+        
+        .menu-buttons {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        button {
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+            border: none;
+            background-color: #444;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        
+        button:active, button.active {
+            background-color: #e91e63;
+        }
+        
+        .spacer {
+            background-color: transparent !important;
+            border: none !important;
+            pointer-events: none;
+        }
+        
+        .action-button {
+            border-radius: 50%;
+            font-size: 24px;
+            height: 80px;
+        }
+        
+        .menu-button {
+            padding: 15px 20px;
+            font-size: 16px;
+            flex: 1;
+        }
+        
+        .system-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+            width: 100%;
+        }
+        
+        .system-button {
+            padding: 12px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            flex: 1;
+        }
+        
+        .system-button:hover {
+            background-color: #0b7dda;
+        }
+        
+        .status-area {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            min-height: 40px;
+            width: 100%;
+        }
+        
+        .main-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #2196F3;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Game Controls</h1>
+    
+    <div class="controls-container">
+        <div class="connection-status">Connecting...</div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <h3>D-Pad</h3>
+                <div class="dpad">
+                    <div class="spacer"></div>
+                    <button id="btn-up" class="dpad-button">↑</button>
+                    <div class="spacer"></div>
+                    
+                    <button id="btn-left" class="dpad-button">←</button>
+                    <div class="spacer"></div>
+                    <button id="btn-right" class="dpad-button">→</button>
+                    
+                    <div class="spacer"></div>
+                    <button id="btn-down" class="dpad-button">↓</button>
+                    <div class="spacer"></div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>Actions</h3>
+                <div class="action-buttons">
+                    <button id="btn-b" class="action-button">B</button>
+                    <button id="btn-a" class="action-button">A</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>Menu</h3>
+                <div class="menu-buttons">
+                    <button id="btn-select" class="menu-button">SELECT</button>
+                    <button id="btn-start" class="menu-button">START</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="system-buttons">
+            <button id="btn-save-state" class="system-button">Save Game</button>
+            <button id="btn-load-state" class="system-button">Load Game</button>
+        </div>
+        
+        <div class="status-area" id="status-area">
+            Ready to control PyBoy
+        </div>
+    </div>
+    
+    <a href="/" class="main-link">Return to Main Screen</a>
+
+    <script>
+        // Connect to Socket.IO server
+        const socket = io();
+        let connected = false;
+        
+        // DOM elements
+        const connectionStatus = document.querySelector('.connection-status');
+        const statusArea = document.getElementById('status-area');
+        
+        // Update status display
+        function updateStatus(message) {
+            statusArea.textContent = message;
+        }
+        
+        // Socket.IO event handlers
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            connectionStatus.textContent = 'Connected';
+            connectionStatus.classList.add('connected');
+            connectionStatus.classList.remove('disconnected');
+            connected = true;
+            updateStatus('Connected to control server');
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('Disconnected from server');
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.classList.add('disconnected');
+            connectionStatus.classList.remove('connected');
+            connected = false;
+            updateStatus('Disconnected from server');
+        });
+        
+        socket.on('status', function(data) {
+            console.log('Status update:', data);
+            if (data.message) {
+                updateStatus(data.message);
+            }
+        });
+        
+        // Helper function to send button events
+        function sendButtonEvent(button, action) {
+            if (!connected) return;
+            socket.emit('input', { key: button, action: action });
+            
+            // Visual feedback
+            const btnElement = document.getElementById(`btn-${button}`);
+            if (btnElement) {
+                if (action === 'press') {
+                    btnElement.classList.add('active');
+                } else {
+                    btnElement.classList.remove('active');
+                }
+            }
+            
+            updateStatus(`Button ${action}: ${button}`);
+        }
+        
+        // Touch/click controls for on-screen buttons
+        const buttons = [
+            { id: 'btn-up', key: 'up' },
+            { id: 'btn-down', key: 'down' },
+            { id: 'btn-left', key: 'left' },
+            { id: 'btn-right', key: 'right' },
+            { id: 'btn-a', key: 'a' },
+            { id: 'btn-b', key: 'b' },
+            { id: 'btn-start', key: 'start' },
+            { id: 'btn-select', key: 'select' }
+        ];
+        
+        // Setup touch/click event listeners for all buttons
+        buttons.forEach(function(button) {
+            const element = document.getElementById(button.id);
+            if (!element) return;
+            
+            // Mouse events
+            element.addEventListener('mousedown', function() {
+                sendButtonEvent(button.key, 'press');
+            });
+            
+            element.addEventListener('mouseup', function() {
+                sendButtonEvent(button.key, 'release');
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                if (element.classList.contains('active')) {
+                    sendButtonEvent(button.key, 'release');
+                }
+            });
+            
+            // Touch events for mobile
+            element.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                sendButtonEvent(button.key, 'press');
+            });
+            
+            element.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                sendButtonEvent(button.key, 'release');
+            });
+            
+            element.addEventListener('touchcancel', function(e) {
+                e.preventDefault();
+                sendButtonEvent(button.key, 'release');
+            });
+        });
+        
+        // System buttons (save/load state)
+        document.getElementById('btn-save-state').addEventListener('click', function() {
+            socket.emit('save_state');
+            updateStatus('Saving game state...');
+        });
+        
+        document.getElementById('btn-load-state').addEventListener('click', function() {
+            socket.emit('load_state');
+            updateStatus('Loading game state...');
+        });
+        
+        // Prevent context menu on long press (mobile)
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Make buttons bigger on mobile devices
+        if (window.innerWidth < 500) {
+            document.querySelectorAll('.dpad-button').forEach(function(button) {
+                button.style.height = '70px';
+                button.style.fontSize = '24px';
+            });
+        }
+    </script>
+</body>
+</html>

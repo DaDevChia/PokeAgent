@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokeAgent - Pokémon Game Boy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        @media (min-width: 1200px) {
+            .container {
+                flex-direction: row;
+                gap: 20px;
+            }
+            
+            .stream-container {
+                flex: 2;
+            }
+            
+            .controls-container {
+                flex: 1;
+            }
+        }
+        
+        h1 {
+            color: #e91e63;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .stream-container {
+            background-color: #222;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .stream-title {
+            color: white;
+            margin-top: 0;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        
+        .stream-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 90%; /* 9:8 Aspect Ratio for Game Boy display */
+            overflow: hidden;
+            background-color: black;
+            border-radius: 4px;
+        }
+        
+        .stream-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .stream-options {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stream-button {
+            padding: 5px 10px;
+            background-color: #555;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .stream-button:hover {
+            background-color: #777;
+        }
+        
+        .controls-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .connection-status {
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .connection-status.connected {
+            color: green;
+        }
+        
+        .connection-status.disconnected {
+            color: red;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 5px;
+        }
+        
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 70px);
+            gap: 15px;
+        }
+        
+        .menu-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        button {
+            width: 100%;
+            height: 100%;
+            border-radius: 5px;
+            border: none;
+            background-color: #444;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        
+        button:active, button.active {
+            background-color: #e91e63;
+        }
+        
+        .spacer {
+            background-color: transparent !important;
+            border: none !important;
+            pointer-events: none;
+        }
+        
+        .action-button {
+            border-radius: 50%;
+            font-size: 20px;
+            height: 70px;
+        }
+        
+        .menu-button {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        
+        .system-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .system-button {
+            padding: 10px 20px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .system-button:hover {
+            background-color: #0b7dda;
+        }
+        
+        .status-area {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+            min-height: 40px;
+        }
+        
+        .keyboard-guide {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .setup-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #2196F3;
+            text-decoration: none;
+        }
+        
+        .stream-placeholder {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            font-size: 16px;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .stream-placeholder a {
+            color: #2196F3;
+            text-decoration: none;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #333;
+            border-radius: 4px;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .dpad {
+                grid-template-columns: repeat(3, 40px);
+                grid-template-rows: repeat(3, 40px);
+            }
+            
+            .action-buttons {
+                grid-template-columns: repeat(2, 60px);
+            }
+            
+            .action-button {
+                height: 60px;
+                font-size: 16px;
+            }
+            
+            .menu-button {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+            
+            .system-button {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Pokémon Game Boy</h1>
+    
+    <div class="container">
+        <div class="stream-container">
+            <h2 class="stream-title">Game Stream</h2>
+            
+            <div class="stream-wrapper">
+                <!-- HLS Video Player -->
+                <video id="hls-video" class="stream-content" autoplay playsinline controls></video>
+                
+                <!-- Placeholder when no stream is available -->
+                <div id="stream-placeholder" class="stream-placeholder">
+                    <p>Waiting for OBS HLS stream...</p>
+                    <p>Make sure OBS is configured to output HLS to the static/hls folder</p>
+                    <a href="/setup" target="_blank">View OBS Setup Guide</a>
+                </div>
+            </div>
+            
+            <div class="stream-options">
+                <button class="stream-button" id="btn-fullscreen">Fullscreen</button>
+                <button class="stream-button" id="btn-refresh-stream">Refresh Stream</button>
+            </div>
+        </div>
+        
+        <div class="controls-container">
+            <div class="connection-status">Connecting...</div>
+            
+            <div class="controls">
+                <div class="control-group">
+                    <h3>D-Pad</h3>
+                    <div class="dpad">
+                        <div class="spacer"></div>
+                        <button id="btn-up">↑</button>
+                        <div class="spacer"></div>
+                        
+                        <button id="btn-left">←</button>
+                        <div class="spacer"></div>
+                        <button id="btn-right">→</button>
+                        
+                        <div class="spacer"></div>
+                        <button id="btn-down">↓</button>
+                        <div class="spacer"></div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button id="btn-b" class="action-button">B</button>
+                        <button id="btn-a" class="action-button">A</button>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <h3>Menu</h3>
+                    <div class="menu-buttons">
+                        <button id="btn-select" class="menu-button">SELECT</button>
+                        <button id="btn-start" class="menu-button">START</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="system-buttons">
+                <button id="btn-save-state" class="system-button">Save Game</button>
+                <button id="btn-load-state" class="system-button">Load Game</button>
+            </div>
+            
+            <div class="status-area" id="status-area">
+                Ready to control PyBoy
+            </div>
+            
+            <a href="/controls" target="_blank" class="setup-link">Controls Only Mode (for Mobile)</a>
+        </div>
+    </div>
+    
+    <div class="keyboard-guide">
+        <h3>Keyboard Controls:</h3>
+        <p>
+            <strong>Arrow Keys:</strong> Move character<br>
+            <strong>Z:</strong> A button<br>
+            <strong>X:</strong> B button<br>
+            <strong>Enter:</strong> Start button<br>
+            <strong>Shift:</strong> Select button<br>
+            <strong>S:</strong> Save state<br>
+            <strong>L:</strong> Load state
+        </p>
+        <a href="/setup" class="setup-link">OBS Setup Guide</a>
+    </div>
+
+    <script>
+        // Connect to Socket.IO server
+        const socket = io();
+        let connected = false;
+        
+        // DOM elements
+        const connectionStatus = document.querySelector('.connection-status');
+        const statusArea = document.getElementById('status-area');
+        const hlsVideo = document.getElementById('hls-video');
+        const streamPlaceholder = document.getElementById('stream-placeholder');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
+        const btnRefreshStream = document.getElementById('btn-refresh-stream');
+        
+        // HLS variables
+        let hls;
+        let hlsRetryCount = 0;
+        const MAX_HLS_RETRIES = 10;
+        
+        // Update status display
+        function updateStatus(message) {
+            statusArea.textContent = message;
+        }
+        
+        // Initialize HLS stream player
+        function initHlsPlayer() {
+            if (Hls.isSupported()) {
+                // Create a new Hls instance if needed
+                if (hls) {
+                    hls.destroy();
+                }
+                
+                hls = new Hls({
+                    debug: false,
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                    backBufferLength: 0,
+                    liveSyncDuration: 1,
+                    liveMaxLatencyDuration: 5,
+                    manifestLoadingTimeOut: 15000,
+                    manifestLoadingMaxRetry: 5,
+                    levelLoadingTimeOut: 15000,
+                    levelLoadingMaxRetry: 5,
+                    fragLoadingTimeOut: 15000,
+                    fragLoadingMaxRetry: 5
+                });
+                
+                // Add timestamp to URL to prevent caching
+                const hlsUrl = '/hls/stream.m3u8?t=' + new Date().getTime();
+                
+                // Load the HLS stream
+                hls.loadSource(hlsUrl);
+                hls.attachMedia(hlsVideo);
+                
+                // HLS events
+                hls.on(Hls.Events.MEDIA_ATTACHED, function() {
+                    console.log('HLS: Media attached');
+                    hlsVideo.muted = true;
+                    hlsVideo.play().catch(e => console.error('Error playing video:', e));
+                });
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    console.log('HLS: Manifest parsed');
+                    streamPlaceholder.style.display = 'none';
+                    hlsRetryCount = 0;
+                    updateStatus('Stream connected');
+                });
+                
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        console.error('HLS fatal error:', data.type);
+                        
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                console.log('Network error, trying to recover');
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.log('Media error, trying to recover');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                console.log('Fatal error, retry HLS initialization');
+                                
+                                // Show placeholder with error message
+                                streamPlaceholder.style.display = 'flex';
+                                streamPlaceholder.innerHTML = `
+                                    <p>Stream connection error</p>
+                                    <p>Make sure OBS is properly configured</p>
+                                    <a href="/setup" target="_blank">View OBS Setup Guide</a>
+                                `;
+                                
+                                // Retry with exponential backoff
+                                hls.destroy();
+                                hlsRetryCount++;
+                                
+                                if (hlsRetryCount <= MAX_HLS_RETRIES) {
+                                    const retryDelay = Math.min(1000 * Math.pow(1.5, hlsRetryCount), 10000);
+                                    console.log(`Retrying HLS in ${retryDelay}ms (attempt ${hlsRetryCount}/${MAX_HLS_RETRIES})`);
+                                    setTimeout(initHlsPlayer, retryDelay);
+                                }
+                                break;
+                        }
+                    }
+                });
+            } else if (hlsVideo.canPlayType('application/vnd.apple.mpegurl')) {
+                // Native HLS support (Safari)
+                hlsVideo.src = '/hls/stream.m3u8';
+                hlsVideo.addEventListener('loadedmetadata', function() {
+                    streamPlaceholder.style.display = 'none';
+                    hlsVideo.play();
+                    updateStatus('Stream connected (native HLS)');
+                });
+                
+                hlsVideo.addEventListener('error', function() {
+                    streamPlaceholder.style.display = 'flex';
+                    updateStatus('Error loading stream');
+                });
+            } else {
+                updateStatus('HLS not supported in this browser');
+                streamPlaceholder.innerHTML = `
+                    <p>Your browser doesn't support HLS streaming</p>
+                    <p>Please use a modern browser like Chrome, Firefox, or Safari</p>
+                `;
+            }
+        }
+        
+        // Refresh stream button
+        btnRefreshStream.addEventListener('click', function() {
+            updateStatus('Refreshing stream...');
+            initHlsPlayer();
+        });
+        
+        // Fullscreen button
+        btnFullscreen.addEventListener('click', function() {
+            if (hlsVideo.requestFullscreen) {
+                hlsVideo.requestFullscreen();
+            } else if (hlsVideo.webkitRequestFullscreen) {
+                hlsVideo.webkitRequestFullscreen();
+            } else if (hlsVideo.msRequestFullscreen) {
+                hlsVideo.msRequestFullscreen();
+            }
+        });
+        
+        // Socket.IO event handlers
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            connectionStatus.textContent = 'Connected';
+            connectionStatus.classList.add('connected');
+            connectionStatus.classList.remove('disconnected');
+            connected = true;
+            updateStatus('Connected to control server');
+            
+            // Check stream status
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.hls_stream_available) {
+                        console.log('HLS stream available with', data.hls_segments, 'segments');
+                        initHlsPlayer();
+                    } else {
+                        console.log('No HLS stream available yet');
+                        streamPlaceholder.style.display = 'flex';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking status:', error);
+                });
+        });
+        
+        socket.on('disconnect', function() {
+            console.log('Disconnected from server');
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.classList.add('disconnected');
+            connectionStatus.classList.remove('connected');
+            connected = false;
+            updateStatus('Disconnected from server');
+        });
+        
+        socket.on('status', function(data) {
+            console.log('Status update:', data);
+            if (data.message) {
+                updateStatus(data.message);
+            }
+        });
+        
+        // Button mappings for keyboard
+        const keyMappings = {
+            'ArrowUp': 'up',
+            'ArrowDown': 'down',
+            'ArrowLeft': 'left',
+            'ArrowRight': 'right',
+            'z': 'a',
+            'x': 'b',
+            'Shift': 'select',
+            'Enter': 'start'
+        };
+        
+        // Helper function to send button events
+        function sendButtonEvent(button, action) {
+            if (!connected) return;
+            socket.emit('input', { key: button, action: action });
+            
+            // Visual feedback
+            const btnElement = document.getElementById(`btn-${button}`);
+            if (btnElement) {
+                if (action === 'press') {
+                    btnElement.classList.add('active');
+                } else {
+                    btnElement.classList.remove('active');
+                }
+            }
+        }
+        
+        // Keyboard event listeners
+        document.addEventListener('keydown', function(event) {
+            if (event.key in keyMappings && !event.repeat) {
+                const button = keyMappings[event.key];
+                sendButtonEvent(button, 'press');
+                event.preventDefault();
+            } else if (event.key === 's') {
+                socket.emit('save_state');
+                updateStatus('Saving game state...');
+            } else if (event.key === 'l') {
+                socket.emit('load_state');
+                updateStatus('Loading game state...');
+            }
+        });
+        
+        document.addEventListener('keyup', function(event) {
+            if (event.key in keyMappings) {
+                const button = keyMappings[event.key];
+                sendButtonEvent(button, 'release');
+                event.preventDefault();
+            }
+        });
+        
+        // Touch/click controls for on-screen buttons
+        const buttons = [
+            { id: 'btn-up', key: 'up' },
+            { id: 'btn-down', key: 'down' },
+            { id: 'btn-left', key: 'left' },
+            { id: 'btn-right', key: 'right' },
+            { id: 'btn-a', key: 'a' },
+            { id: 'btn-b', key: 'b' },
+            { id: 'btn-start', key: 'start' },
+            { id: 'btn-select', key: 'select' }
+        ];
+        
+        // Setup touch/click event listeners for all buttons
+        buttons.forEach(function(button) {
+            const element = document.getElementById(button.id);
+            if (!element) return;
+            
+            // Mouse events
+            element.addEventListener('mousedown', function() {
+                sendButtonEvent(button.key, 'press');
+            });
+            
+            element.addEventListener('mouseup', function() {
+                sendButtonEvent(button.key, 'release');
+            });
+            
+            element.addEventListener('mouseleave', function() {
+                if (element.classList.contains('active')) {
+                    sendButtonEvent(button.key, 'release');
+                }
+            });
+            
+            // Touch events for mobile
+            element.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                sendButtonEvent(button.key, 'press');
+            });
+            
+            element.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                sendButtonEvent(button.key, 'release');
+            });
+            
+            element.addEventListener('touchcancel', function(e) {
+                e.preventDefault();
+                sendButtonEvent(button.key, 'release');
+            });
+        });
+        
+        // System buttons (save/load state)
+        document.getElementById('btn-save-state').addEventListener('click', function() {
+            socket.emit('save_state');
+            updateStatus('Saving game state...');
+        });
+        
+        document.getElementById('btn-load-state').addEventListener('click', function() {
+            socket.emit('load_state');
+            updateStatus('Loading game state...');
+        });
+        
+        // Initialize HLS player on page load
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                // Small delay to let server check for stream
+                initHlsPlayer();
+            }, 1000);
+        });
+        
+        // Auto-retry to find HLS stream every 5 seconds
+        const streamCheckInterval = setInterval(function() {
+            if (streamPlaceholder.style.display !== 'none') {
+                fetch('/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.hls_stream_available) {
+                            console.log('HLS stream detected, initializing player');
+                            initHlsPlayer();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking status:', error);
+                    });
+            }
+        }, 5000);
+        
+        // Prevent context menu on long press (mobile)
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                e.preventDefault();
+                return false;
+            }
+        });
+    </script>
+</body>
+</html>

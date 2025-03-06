@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PokeAgent - Mobile Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Press Start 2P', cursive, sans-serif;
+            background-color: #333;
+            color: white;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+        
+        .game-preview {
+            width: 100%;
+            max-height: 30vh;
+            background-color: #0f380f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        
+        #game-screen {
+            width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            image-rendering: pixelated;
+        }
+        
+        .controls {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+        }
+        
+        .d-pad-container {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            height: 35vh;
+        }
+        
+        .d-pad {
+            width: 40vw;
+            height: 40vw;
+            max-width: 200px;
+            max-height: 200px;
+            position: relative;
+            margin-left: 20px;
+        }
+        
+        .d-pad-button {
+            position: absolute;
+            background-color: #555;
+            border: 2px solid #777;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            touch-action: manipulation;
+        }
+        
+        .up, .down {
+            width: 33.33%;
+            height: 33.33%;
+            left: 33.33%;
+        }
+        
+        .left, .right {
+            width: 33.33%;
+            height: 33.33%;
+            top: 33.33%;
+        }
+        
+        .up {
+            top: 0;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .right {
+            right: 0;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .down {
+            bottom: 0;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .left {
+            left: 0;
+            border-radius: 10px 0 0 10px;
+        }
+        
+        .action-container {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            position: relative;
+            height: 35vh;
+        }
+        
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-right: 20px;
+        }
+        
+        .action-button {
+            width: 20vw;
+            height: 20vw;
+            max-width: 100px;
+            max-height: 100px;
+            background-color: #9c0e0e;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            touch-action: manipulation;
+        }
+        
+        .meta-controls {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 10px;
+        }
+        
+        .meta-button {
+            width: 25vw;
+            height: 10vw;
+            max-width: 120px;
+            max-height: 40px;
+            background-color: #666;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 0.7rem;
+            transform: rotate(-20deg);
+            touch-action: manipulation;
+        }
+        
+        .button-active {
+            background-color: #ff0000;
+            box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.7);
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.7rem;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="game-preview">
+            <img id="game-screen" src="/static/gameboy_placeholder.svg" alt="Game Screen">
+        </div>
+        
+        <div class="controls">
+            <div class="d-pad-container">
+                <div class="d-pad">
+                    <div class="d-pad-button up" id="btn-up">▲</div>
+                    <div class="d-pad-button right" id="btn-right">▶</div>
+                    <div class="d-pad-button down" id="btn-down">▼</div>
+                    <div class="d-pad-button left" id="btn-left">◀</div>
+                </div>
+            </div>
+            
+            <div class="action-container">
+                <div class="action-buttons">
+                    <div class="action-button" id="btn-b">B</div>
+                    <div class="action-button" id="btn-a">A</div>
+                </div>
+            </div>
+            
+            <div class="meta-controls">
+                <div class="meta-button" id="btn-select">SELECT</div>
+                <div class="meta-button" id="btn-start">START</div>
+            </div>
+            
+            <div class="status" id="status">Not connected</div>
+        </div>
+        
+        <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+        <script>
+            const socket = io();
+            const gameScreen = document.getElementById('game-screen');
+            const statusEl = document.getElementById('status');
+            
+            // Button mappings
+            const buttons = {
+                'btn-up': 'up',
+                'btn-right': 'right',
+                'btn-down': 'down',
+                'btn-left': 'left',
+                'btn-a': 'a',
+                'btn-b': 'b',
+                'btn-select': 'select',
+                'btn-start': 'start'
+            };
+            
+            // Connect to WebSocket
+            socket.on('connect', () => {
+                statusEl.textContent = 'Connected';
+                statusEl.style.color = '#0f0';
+                
+                // Start updating the game screen
+                updateGameScreen();
+            });
+            
+            socket.on('disconnect', () => {
+                statusEl.textContent = 'Disconnected';
+                statusEl.style.color = '#f00';
+            });
+            
+            // Listen for button presses from other clients
+            socket.on('button_press', (data) => {
+                const elementId = Object.keys(buttons).find(key => buttons[key] === data.button);
+                if (elementId) {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        highlightButton(element);
+                    }
+                }
+            });
+            
+            // Update game screen
+            function updateGameScreen() {
+                fetch('/api/screen?format=base64')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.image) {
+                            gameScreen.src = `data:image/png;base64,${data.image}`;
+                        }
+                        setTimeout(updateGameScreen, 100); // Update every 100ms
+                    })
+                    .catch(error => {
+                        console.error('Error updating screen:', error);
+                        setTimeout(updateGameScreen, 1000); // Retry after 1s on error
+                    });
+            }
+            
+            // Add button event listeners
+            Object.keys(buttons).forEach(btnId => {
+                const button = document.getElementById(btnId);
+                const buttonValue = buttons[btnId];
+                
+                // Touch events for mobile
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    sendButtonPress(buttonValue);
+                    highlightButton(button);
+                });
+                
+                // Mouse events for desktop
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    sendButtonPress(buttonValue);
+                    highlightButton(button);
+                });
+            });
+            
+            // Send button press to server
+            function sendButtonPress(button) {
+                fetch('/api/button', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        button: button,
+                        delay: 1
+                    })
+                })
+                .then(response => response.json())
+                .then(data => console.log('Button press response:', data))
+                .catch(error => console.error('Error sending button press:', error));
+            }
+            
+            // Highlight button when pressed
+            function highlightButton(button) {
+                button.classList.add('button-active');
+                setTimeout(() => {
+                    button.classList.remove('button-active');
+                }, 200);
+            }
+        </script>
+    </div>
