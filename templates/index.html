@@ -181,7 +181,6 @@
                 </div>
                 
                 <div class="mt-3">
-                    <button id="init-btn" class="btn btn-primary">Initialize Game</button>
                     <button id="refresh-state-btn" class="btn btn-info">Refresh State</button>
                 </div>
             </div>
@@ -204,27 +203,6 @@
             'select': document.getElementById('btn-select'),
             'start': document.getElementById('btn-start')
         };
-        
-        // Initialize game when button is clicked
-        document.getElementById('init-btn').addEventListener('click', () => {
-            fetch('/api/init', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    rom_path: 'PokemonRed.gb',
-                    save_state_path: 'init.state'
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Game initialized:', data);
-                updateGameScreen();
-                updateGameState();
-            })
-            .catch(error => console.error('Error initializing game:', error));
-        });
         
         // Refresh state when button is clicked
         document.getElementById('refresh-state-btn').addEventListener('click', updateGameState);

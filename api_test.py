@@ -8,16 +8,6 @@ import json
 # Configuration
 BASE_URL = "http://localhost:5000/api"
 SAVE_IMAGES = True
-SAVE_STATE = True
-
-def initialize_game():
-    """Initialize the game with the ROM and save state"""
-    print("Initializing game...")
-    response = requests.post(f"{BASE_URL}/init", json={
-        "rom_path": "PokemonRed.gb",
-        "save_state_path": "init.state"
-    })
-    return response.json()
 
 def get_screen(save_image=False):
     """Get the current screen image"""
@@ -114,9 +104,6 @@ def walk_around_demo():
 
 def main():
     """Main function to demonstrate API usage"""
-    # Initialize the game
-    init_response = initialize_game()
-    print("Initialization response:", init_response)
     
     # Get and save the initial screen
     initial_screen = get_screen(save_image=SAVE_IMAGES)
@@ -144,12 +131,6 @@ def main():
     updated_state = get_game_state()
     print("\nUpdated game state:")
     print_json(updated_state)
-    
-    # Save the game state if enabled
-    if SAVE_STATE:
-        save_response = save_game_state()
-        print("\nSave game response:")
-        print_json(save_response)
     
     print("\nDemo completed!")
 

@@ -100,7 +100,6 @@ class PokeAgent:
     def get_screen_base64(self):
         image = self.get_screen_image()
         buffered = BytesIO()
-        image = image.resize((320, 288), Image.NEAREST)
         image.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode('utf-8')
 
@@ -328,7 +327,6 @@ def cleanup():
     if agent:
         agent.close()
 
-# Create the global agent only once by disabling the reloader.
 if __name__ == '__main__':
     agent = PokeAgent("PokemonRed.gb", window_type="SDL2")
     socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False)
