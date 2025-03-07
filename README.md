@@ -56,9 +56,7 @@ PokeAgent is a Flask-based web application that provides an API for controlling 
 
 ### Basic Emulator Control
 
-- `POST /api/init`: Initialize the emulator
 - `POST /api/button`: Press a button
-- `POST /api/tick`: Advance emulation by n frames
 - `GET /api/screen`: Get the current screen image
 - `GET /api/state`: Get the complete game state
 
@@ -79,14 +77,7 @@ PokeAgent is a Flask-based web application that provides an API for controlling 
 - `GET /api/pokemon/maps`: Get all available map data
 - `POST /api/move`: Navigate to a specific location on the current map
 
-## API Examples
-
-### Initialize the emulator
-```bash
-curl -X POST http://localhost:5000/api/init \
-  -H "Content-Type: application/json" \
-  -d '{"rom_path": "PokemonRed.gb", "save_state_path": "init.state"}'
-```
+## API Example
 
 ### Press a button
 ```bash
@@ -98,6 +89,11 @@ curl -X POST http://localhost:5000/api/button \
 ### Get the current screen
 ```bash
 curl -X GET http://localhost:5000/api/screen?format=base64
+```
+
+### Get the current screen png
+```bash
+curl -X GET http://localhost:5000/api/screen
 ```
 
 ### Get game state

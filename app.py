@@ -9,6 +9,8 @@ logging.getLogger('pyboy.core.sound').handlers.clear()
 import time
 import json
 import threading
+import queue
+
 from flask import Flask, jsonify, request, send_file, render_template
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit
@@ -25,11 +27,16 @@ class PokeAgent:
         self.rom_path = rom_path
         self.pyboy = None
         self.init_lock = threading.Event()
+        self.command_queue = queue.Queue(maxsize=15)  # Limit the queue size
         self.emu_thread = threading.Thread(target=self._run_emulator,
                                            args=(rom_path, window_type),
                                            daemon=True)
         self.emu_thread.start()
         self.init_lock.wait()  # Wait until PyBoy is initialized
+
+        # Start the command processing worker thread
+        self.worker_thread = threading.Thread(target=self.process_commands, daemon=True)
+        self.worker_thread.start()
 
         try:
             self.pokemon_helper = PokemonHelper(self.pyboy)
@@ -73,26 +80,77 @@ class PokeAgent:
                 self.event_names = json.load(f)
 
     def _run_emulator(self, rom_path, window_type):
-        # Create PyBoy with sound disabled; SDL_AUDIODRIVER is already set to "dummy"
-        self.pyboy = PyBoy(rom_path, window=window_type, debug=False, sound_emulated=True)
+        self.pyboy = PyBoy(rom_path, window=window_type, debug=False, sound_emulated=False)
         self.pyboy.set_emulation_speed(1)
-        self.pyboy.tick()  # Kick off initialization
+        self.pyboy.tick()  # Initialization tick
         self.init_lock.set()  # Signal that PyBoy is ready
+        min_interval = 0.01  # desired tick interval in seconds
+
+        last_tick = time.time()
         while True:
-            self.pyboy.tick()
-            time.sleep(0.01)
+            # Process any queued commands before ticking
+            try:
+                command = self.command_queue.get(block=False)
+                if command.get("action") == "button":
+                    self._handle_button(command.get("input_key"), command.get("delay", 1))
+                # You can handle other actions here
+                self.command_queue.task_done()
+            except queue.Empty:
+                pass
 
-    def tick(self, n=1):
-        return self.pyboy.tick(n)
+            now = time.time()
+            if now - last_tick >= min_interval:
+                self.pyboy.tick()
+                last_tick = now
+            else:
+                time.sleep(min_interval - (now - last_tick))
 
-    def button(self, input_key, delay=1):
+    def process_commands(self):
+      min_interval = 0.1  # minimum interval between commands in seconds (adjust as needed)
+      last_command_time = time.time()
+      while True:
+          try:
+              command = self.command_queue.get(timeout=1)
+          except queue.Empty:
+              continue
+          # Ensure a minimum time gap between processing commands.
+          now = time.time()
+          elapsed = now - last_command_time
+          if elapsed < min_interval:
+              time.sleep(min_interval - elapsed)
+          action = command.get("action")
+          if action == "button":
+              input_key = command.get("input_key")
+              delay = command.get("delay", 1)
+              try:
+                  self._handle_button(input_key, delay)
+              except Exception as e:
+                  print("Error processing button command:", e)
+          last_command_time = time.time()
+          self.command_queue.task_done()
+
+    def enqueue_command(self, command):
+        try:
+            self.command_queue.put(command, block=False)
+            return True
+        except queue.Full:
+            return False
+
+    def _handle_button(self, input_key, delay=1):
         valid_buttons = ["a", "b", "start", "select", "left", "right", "up", "down"]
         if input_key not in valid_buttons:
             raise ValueError(f"Invalid input: {input_key}. Must be one of {valid_buttons}")
         self.last_button = input_key
-        self.pyboy.button(input_key)
-        self.pyboy.tick(delay)
+        self.pyboy.button(input_key, delay)
         return True
+
+    def button(self, input_key, delay=1):
+        """Public method to enqueue a button press command."""
+        command = {"action": "button", "input_key": input_key, "delay": delay}
+        if self.enqueue_command(command):
+            return True
+        else:
+            raise Exception("Command queue is full. Please try again later.")
 
     def get_screen_image(self):
         return self.pyboy.screen.image.copy()
@@ -186,7 +244,7 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Define your Flask routes (unchanged)
+# Define Flask routes
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -274,15 +332,6 @@ def move_to_location():
             "reached_destination": result,
             "current_position": agent.get_player_position()
         })
-
-@app.route('/api/tick', methods=['POST'])
-def tick():
-    if not agent:
-        return jsonify({"error": "PokeAgent not initialized"}), 400
-    data = request.json
-    n = data.get('n', 1)
-    agent.tick(n)
-    return jsonify({"status": "success", "ticks": n})
 
 @app.route('/api/pokemon/location', methods=['GET'])
 def get_pokemon_location():
