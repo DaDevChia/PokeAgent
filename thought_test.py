@@ -15,6 +15,16 @@ def add_agent_thought(thought):
     response = requests.post(f"{BASE_URL}/agent/thoughts", json={"thought": thought})
     return response.json()
 
+def add_memory(memory):
+    """Add a new memory"""
+    response = requests.post(f"{BASE_URL}/agent/memory", json={"memory": memory})
+    return response.json()
+
+def get_memory():
+    """Get memories"""
+    response = requests.get(f"{BASE_URL}/agent/memory")
+    return response.json()
+    
 def print_json(data):
     """Pretty print JSON data"""
     print(json.dumps(data, indent=2))
@@ -29,6 +39,13 @@ def walk_around_demo():
     thoughts = get_agent_thoughts()
     print("\nAgent thoughts:")
     print_json(thoughts)
+
+    # Add a new memory
+    memory_response = add_memory("This is a test memory.")
+
+    # Get all memories
+    memories = get_memory()
+    print("\nMemories:")
     
     print("\nDemo completed!")
 
