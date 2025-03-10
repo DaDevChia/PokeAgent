@@ -10,6 +10,8 @@ import time
 import json
 import threading
 import queue
+from datetime import datetime
+from collections import deque
 
 from flask import Flask, jsonify, request, send_file, render_template
 from flask_cors import CORS
@@ -24,6 +26,9 @@ from pokemon_helper import PokemonHelper
 
 class PokeAgent:
     def __init__(self, rom_path, window_type="SDL2"):
+        
+        self.agent_thoughts = deque(maxlen=100)
+
         self.rom_path = rom_path
         self.pyboy = None
         self.init_lock = threading.Event()
@@ -235,6 +240,21 @@ class PokeAgent:
             current_pos = self.get_player_position()
         return steps_taken < max_steps
 
+    def add_thought(self, thought):
+        """Record a new agent thought with timestamp."""
+        self.agent_thoughts.append({
+            "timestamp": datetime.now().isoformat(),
+            "content": thought
+        })
+        # Emit the thought via socketio
+        socketio.emit('agent_thought', {'thought': thought})
+        return True
+    
+    # Add this new method to get all thoughts
+    def get_thoughts(self):
+        """Return all recorded agent thoughts."""
+        return list(self.agent_thoughts)
+    
     def close(self):
         if self.pyboy:
             self.pyboy.stop()
@@ -361,6 +381,36 @@ def get_pokemon_maps():
     if not hasattr(agent.pokemon_helper, 'map_data'):
         return jsonify({"error": "Map data not available"}), 400
     return jsonify(agent.pokemon_helper.map_data)
+
+# Agent thoughts show what the agent is thinking
+
+@app.route('/agent/thoughts')
+def agent_thoughts_page():
+    """Serve the agent thoughts HTML page."""
+    return render_template('agent_thoughts.html')
+
+@app.route('/api/agent/thoughts', methods=['GET'])
+def get_agent_thoughts():
+    """API endpoint to get all recorded agent thoughts."""
+    if not agent:
+        return jsonify({"error": "PokeAgent not initialized"}), 400
+    return jsonify({"thoughts": agent.get_thoughts()})
+
+@app.route('/api/agent/thoughts', methods=['POST'])
+def add_agent_thought():
+    """API endpoint to add a new agent thought."""
+    if not agent:
+        return jsonify({"error": "PokeAgent not initialized"}), 400
+    
+    data = request.json
+    thought = data.get('thought')
+    
+    if not thought:
+        return jsonify({"error": "Thought content required"}), 400
+    
+    agent.add_thought(thought)
+    return jsonify({"status": "success", "message": "Thought recorded"})
+
 
 @socketio.on('connect')
 def handle_connect():

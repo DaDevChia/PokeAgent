@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokeAgent - Agent Thoughts</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #9bbc0f;
+            font-family: 'Press Start 2P', cursive, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .gameboy-container {
+            width: 90%;
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #a4c2a8;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .gameboy-header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #0f380f;
+        }
+        
+        .screen-container {
+            background-color: #0f380f;
+            border: 10px solid #8bac0f;
+            border-radius: 10px;
+            padding: 10px;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .thoughts-display {
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            color: #9bbc0f;
+            font-size: 14px;
+            line-height: 1.5;
+            scrollbar-width: thin;
+            scrollbar-color: #8bac0f #0f380f;
+        }
+        
+        .thoughts-display::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .thoughts-display::-webkit-scrollbar-track {
+            background: #0f380f;
+        }
+        
+        .thoughts-display::-webkit-scrollbar-thumb {
+            background-color: #8bac0f;
+            border-radius: 4px;
+        }
+        
+        .thought-item {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 2px dashed #8bac0f;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .thought-time {
+            font-size: 10px;
+            color: #7a9d0e;
+            margin-bottom: 8px;
+        }
+        
+        .thought-content {
+            word-wrap: break-word;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .control-button {
+            background-color: #0f380f;
+            color: #9bbc0f;
+            font-family: 'Press Start 2P', cursive;
+            padding: 8px 15px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .control-button:hover {
+            background-color: #306230;
+        }
+        
+        .blink-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background-color: #9bbc0f;
+            margin-left: 2px;
+            animation: blink 1s step-end infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pixelated-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQIW2NkYGD4z8DAwMAAABgAAW2G/tMAAAAASUVORK5CYII=');
+            background-repeat: repeat;
+            pointer-events: none;
+            opacity: 0.03;
+        }
+        
+        .screen-glare {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
+            pointer-events: none;
+            border-radius: 5px 5px 0 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="gameboy-container">
+        <div class="gameboy-header">
+            <h1>POKEAGENT</h1>
+            <h2>Agent Thoughts</h2>
+        </div>
+        
+        <div class="screen-container">
+            <div class="pixelated-overlay"></div>
+            <div class="screen-glare"></div>
+            <div class="thoughts-display" id="thoughts-display">
+                <div class="thought-item">
+                    <div class="thought-time">BOOT SEQUENCE: HH:MM:SS</div>
+                    <div class="thought-content">
+                        Initializing PokéAgent thought process...<span class="blink-cursor"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-button" id="clear-btn">CLEAR</button>
+            <button class="control-button" id="autoscroll-btn">AUTOSCROLL: ON</button>
+        </div>
+    </div>
+
+    <!-- The Socket.IO script must be loaded before our custom script -->
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            let thoughtsArray = [];
+            let autoScroll = true;
+            const thoughtsDisplay = document.getElementById('thoughts-display');
+            const clearBtn = document.getElementById('clear-btn');
+            const autoscrollBtn = document.getElementById('autoscroll-btn');
+            
+            console.log("Initializing agent thoughts page...");
+            
+            // Set up WebSocket connection
+            const socket = io();
+            
+            // Debug socket connection status
+            socket.on('connect', () => {
+                console.log("Socket connected:", socket.id);
+                addThought("WebSocket connected. Waiting for agent thoughts...");
+            });
+            
+            socket.on('disconnect', () => {
+                console.log("Socket disconnected");
+                addThought("WebSocket disconnected. Reconnecting...");
+            });
+            
+            socket.on('agent_thought', (data) => {
+                console.log("Received thought:", data);
+                addThought(data.thought);
+            });
+            
+            // Function to add a new thought
+            function addThought(thoughtText) {
+                const now = new Date();
+                const timeString = now.toTimeString().split(' ')[0];
+                
+                thoughtsArray.push({
+                    time: timeString,
+                    content: thoughtText
+                });
+                
+                // Keep array at reasonable size
+                if (thoughtsArray.length > 100) {
+                    thoughtsArray.shift();
+                }
+                
+                renderThoughts();
+            }
+            
+            // Render all thoughts
+            function renderThoughts() {
+                thoughtsDisplay.innerHTML = '';
+                
+                thoughtsArray.forEach(thought => {
+                    const thoughtElement = document.createElement('div');
+                    thoughtElement.className = 'thought-item';
+                    
+                    const timeElement = document.createElement('div');
+                    timeElement.className = 'thought-time';
+                    timeElement.textContent = thought.time;
+                    
+                    const contentElement = document.createElement('div');
+                    contentElement.className = 'thought-content';
+                    contentElement.textContent = thought.content;
+                    
+                    thoughtElement.appendChild(timeElement);
+                    thoughtElement.appendChild(contentElement);
+                    thoughtsDisplay.appendChild(thoughtElement);
+                });
+                
+                // Add blinking cursor to the last thought
+                if (thoughtsArray.length > 0) {
+                    const lastThought = thoughtsDisplay.lastElementChild.querySelector('.thought-content');
+                    const cursor = document.createElement('span');
+                    cursor.className = 'blink-cursor';
+                    lastThought.appendChild(cursor);
+                }
+                
+                // Auto-scroll to bottom
+                if (autoScroll) {
+                    thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
+                }
+            }
+            
+            // Clear thoughts button
+            clearBtn.addEventListener('click', () => {
+                thoughtsArray = [];
+                renderThoughts();
+                addThought("Thought buffer cleared.");
+            });
+            
+            // Toggle auto-scroll
+            autoscrollBtn.addEventListener('click', () => {
+                autoScroll = !autoScroll;
+                autoscrollBtn.textContent = `AUTOSCROLL: ${autoScroll ? 'ON' : 'OFF'}`;
+                
+                if (autoScroll) {
+                    thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
+                }
+            });
+            
+            // Fetch initial thoughts if any
+            fetch('/api/agent/thoughts')
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Fetched initial thoughts:", data);
+                    if (data.thoughts && data.thoughts.length > 0) {
+                        thoughtsArray = data.thoughts.map(t => ({
+                            time: new Date(t.timestamp).toTimeString().split(' ')[0],
+                            content: t.content
+                        }));
+                        renderThoughts();
+                    } else {
+                        addThought("No thoughts recorded yet. Waiting for agent activity...");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching thoughts:', error);
+                    addThought("Error connecting to server. Please try again later.");
+                });
+        });
+    </script>
+</body>
+</html>
