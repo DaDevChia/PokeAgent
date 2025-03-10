@@ -42,26 +42,10 @@
         
         .state-display {
             flex: 1;
-            overflow-y: auto;
             padding: 8px;
             color: #9bbc0f;
-            font-size: 12px;
             line-height: 1.5;
-            scrollbar-width: thin;
-            scrollbar-color: #8bac0f #0f380f;
-        }
-        
-        .state-display::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .state-display::-webkit-scrollbar-track {
-            background: #0f380f;
-        }
-        
-        .state-display::-webkit-scrollbar-thumb {
-            background-color: #8bac0f;
-            border-radius: 4px;
+            overflow: hidden;
         }
         
         pre {
@@ -69,7 +53,10 @@
             white-space: pre-wrap;
             word-wrap: break-word;
             font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
+            width: 100%;
+            height: 100%;
+            text-align: left;
+            /* Font size will be controlled by JavaScript */
         }
         
         .pixelated-overlay {
@@ -229,7 +216,7 @@
             <a href="/controller" class="nav-button">CONTROLLER</a>
         </div>
         
-        <div class="row">
+        <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="gameboy-container">
                     <div class="screen-container">
@@ -268,6 +255,7 @@
     <script>
         const socket = io();
         const stateJson = document.getElementById('state-json');
+        const stateDisplay = document.getElementById('state-display');
         const gameScreen = document.getElementById('game-screen');
         const buttons = {
             'up': document.getElementById('btn-up'),
@@ -300,11 +288,31 @@
                 .then(response => response.json())
                 .then(data => {
                     stateJson.textContent = JSON.stringify(data, null, 2);
+                    fitTextToContainer();
                 })
                 .catch(error => {
                     console.error('Error fetching game state:', error);
                     stateJson.textContent = "Error loading game state. Please try again.";
                 });
+        }
+        
+        // Function to fit text to container
+        function fitTextToContainer() {
+            // Start with a reasonable size
+            let fontSize = 10;
+            stateJson.style.fontSize = `${fontSize}px`;
+            
+            // Set a maximum width and height (with some margin)
+            const maxHeight = stateDisplay.clientHeight * 0.95;
+            const maxWidth = stateDisplay.clientWidth * 0.95;
+            
+            // Reduce font size until content fits
+            while ((stateJson.scrollHeight > maxHeight || stateJson.scrollWidth > maxWidth) && fontSize > 5) {
+                fontSize -= 0.5;
+                stateJson.style.fontSize = `${fontSize}px`;
+            }
+            
+            console.log(`Adjusted font size to: ${fontSize}px`);
         }
         
         // Highlight a button when pressed
@@ -345,6 +353,9 @@
         
         // Initial data load
         updateGameState();
+        
+        // Handle window resize
+        window.addEventListener('resize', fitTextToContainer);
         
         // Set up auto-refresh every 5 seconds
         setInterval(() => {
