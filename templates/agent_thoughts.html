@@ -35,20 +35,32 @@
             color: #0f380f;
         }
         
-        .screen-container {
+        .screens-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .screen {
             background-color: #0f380f;
             border: 10px solid #8bac0f;
             border-radius: 10px;
             padding: 10px;
-            flex: 1;
-            overflow: hidden;
             position: relative;
-            display: flex;
-            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .thoughts-screen {
+            height: 75%;
+        }
+        
+        .memory-screen {
+            height: 25%;
         }
         
         .thoughts-display {
-            height: 300px;
+            height: 100%;
             overflow-y: auto;
             padding: 10px;
             color: #9bbc0f;
@@ -56,23 +68,14 @@
             line-height: 1.5;
             scrollbar-width: thin;
             scrollbar-color: #8bac0f #0f380f;
-            margin-bottom: 15px;
-        }
-        
-        .memory-container {
-            margin-top: 10px;
-            background-color: #0f380f;
-            border-top: 2px dashed #8bac0f;
-            padding: 10px;
-            height: 150px;
         }
         
         .memory-display {
+            height: 100%;
             color: #9bbc0f;
             font-size: 14px;
             line-height: 1.5;
             overflow-y: auto;
-            height: 100%;
             scrollbar-width: thin;
             scrollbar-color: #8bac0f #0f380f;
             word-wrap: break-word;
@@ -93,6 +96,15 @@
         .memory-display::-webkit-scrollbar-thumb {
             background-color: #8bac0f;
             border-radius: 4px;
+        }
+        
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
         }
         
         .thought-item {
@@ -150,6 +162,15 @@
             text-transform: uppercase;
             font-size: 12px;
             color: #7a9d0e;
+            padding: 5px;
+            background-color: rgba(15, 56, 15, 0.5);
+            border-radius: 4px;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: calc(100% - 40px); /* Account for section titles */
         }
         
         @keyframes blink {
@@ -233,22 +254,27 @@
             <h2>Agent Monitor</h2>
         </div>
         
-        <div class="screen-container">
-            <div class="pixelated-overlay"></div>
-            <div class="screen-glare"></div>
-            
-            <div class="section-title">Thoughts</div>
-            <div class="thoughts-display" id="thoughts-display">
-                <div class="thought-item">
-                    <div class="thought-time">BOOT SEQUENCE: HH:MM:SS</div>
-                    <div class="thought-content">
-                        Initializing PokéAgent thought process...
+        <div class="screens-container">
+            <!-- Thoughts Screen -->
+            <div class="screen thoughts-screen">
+                <div class="screen-overlay pixelated-overlay"></div>
+                <div class="screen-overlay screen-glare"></div>
+                <div class="section-title">Agent Thoughts</div>
+                <div class="thoughts-display" id="thoughts-display">
+                    <div class="thought-item">
+                        <div class="thought-time">BOOT SEQUENCE: HH:MM:SS</div>
+                        <div class="thought-content">
+                            Initializing PokéAgent thought process...
+                        </div>
                     </div>
                 </div>
             </div>
             
-            <div class="section-title">Memory</div>
-            <div class="memory-container">
+            <!-- Memory Screen -->
+            <div class="screen memory-screen">
+                <div class="screen-overlay pixelated-overlay"></div>
+                <div class="screen-overlay screen-glare"></div>
+                <div class="section-title">Memory System</div>
                 <div class="memory-display" id="memory-display">
                     Initializing memory system...<span class="blink-cursor"></span>
                 </div>
@@ -270,7 +296,9 @@
             let thoughtsArray = [];
             let autoScroll = true;
             const thoughtsDisplay = document.getElementById('thoughts-display');
+            const thoughtsScreen = document.querySelector('.thoughts-screen');
             const memoryDisplay = document.getElementById('memory-display');
+            const memoryScreen = document.querySelector('.memory-screen');
             const clearBtn = document.getElementById('clear-btn');
             const autoscrollBtn = document.getElementById('autoscroll-btn');
             
@@ -300,6 +328,63 @@
             socket.on('agent_memory', (data) => {
                 updateMemoryDisplay(data.memory);
             });
+            
+            // Function to dynamically adjust text size
+            function adjustTextSize(container, content, minSize = 5) {
+                // Calculate available height (accounting for padding, etc.)
+                const availableHeight = container.clientHeight - 
+                                      parseInt(window.getComputedStyle(container).paddingTop) - 
+                                      parseInt(window.getComputedStyle(container).paddingBottom);
+                
+                // Start with the original size from CSS
+                let fontSize = 14;
+                let allItems;
+                
+                // Check if we're dealing with thought items or a single text element
+                if (content.classList.contains('thoughts-display')) {
+                    allItems = content.querySelectorAll('.thought-item');
+                    
+                    // If there are thought items, adjust their font size
+                    if (allItems.length > 0) {
+                        // Try different font sizes until content fits
+                        while (fontSize > minSize) {
+                            // Apply font size to all items
+                            allItems.forEach(item => {
+                                item.style.fontSize = `${fontSize}px`;
+                                
+                                // Also adjust the time element which is smaller
+                                const timeElement = item.querySelector('.thought-time');
+                                if (timeElement) {
+                                    timeElement.style.fontSize = `${Math.max(fontSize - 4, 6)}px`;
+                                }
+                            });
+                            
+                            // Check if content fits
+                            if (content.scrollHeight <= availableHeight || fontSize <= minSize) {
+                                break;
+                            }
+                            
+                            // Reduce font size and try again
+                            fontSize -= 0.5;
+                        }
+                    }
+                } else {
+                    // For memory display (single text element)
+                    while (fontSize > minSize) {
+                        content.style.fontSize = `${fontSize}px`;
+                        
+                        // Check if content fits
+                        if (content.scrollHeight <= availableHeight || fontSize <= minSize) {
+                            break;
+                        }
+                        
+                        // Reduce font size and try again
+                        fontSize -= 0.5;
+                    }
+                }
+                
+                return fontSize;
+            }
             
             // Function to add a new thought
             function addThought(thoughtText) {
@@ -352,6 +437,9 @@
                 if (autoScroll) {
                     thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
                 }
+                
+                // Adjust text size to fit
+                adjustTextSize(thoughtsScreen, thoughtsDisplay);
             }
             
             // Update the memory display
@@ -368,6 +456,9 @@
                 const cursor = document.createElement('span');
                 cursor.className = 'blink-cursor';
                 memoryDisplay.appendChild(cursor);
+                
+                // Adjust text size to fit
+                adjustTextSize(memoryScreen, memoryDisplay);
             }
             
             // Fetch and update memory
@@ -398,6 +489,12 @@
                 if (autoScroll) {
                     thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
                 }
+            });
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                adjustTextSize(thoughtsScreen, thoughtsDisplay);
+                adjustTextSize(memoryScreen, memoryDisplay);
             });
             
             // Fetch initial thoughts if any
