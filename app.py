@@ -28,6 +28,7 @@ class PokeAgent:
     def __init__(self, rom_path, window_type="SDL2"):
         
         self.agent_thoughts = deque(maxlen=100)
+        self.agent_memory = "No memory stored yet."
 
         self.rom_path = rom_path
         self.pyboy = None
@@ -255,6 +256,18 @@ class PokeAgent:
         """Return all recorded agent thoughts."""
         return list(self.agent_thoughts)
     
+    # Add these methods for memory management
+    def update_memory(self, memory):
+        """Update the agent's memory with new content."""
+        self.agent_memory = memory
+        # Emit the memory update via socketio
+        socketio.emit('agent_memory', {'memory': memory})
+        return True
+    
+    def get_memory(self):
+        """Return the current agent memory."""
+        return self.agent_memory
+    
     def close(self):
         if self.pyboy:
             self.pyboy.stop()
@@ -272,6 +285,10 @@ def index():
 @app.route('/controller')
 def controller():
     return render_template('controller.html')
+
+@app.route('/game_state')
+def game_state():
+    return render_template('game_state.html')
 
 @app.route('/api/screen', methods=['GET'])
 def get_screen():
@@ -410,6 +427,28 @@ def add_agent_thought():
     
     agent.add_thought(thought)
     return jsonify({"status": "success", "message": "Thought recorded"})
+
+@app.route('/api/agent/memory', methods=['GET'])
+def get_agent_memory():
+    """API endpoint to get the current agent memory."""
+    if not agent:
+        return jsonify({"error": "PokeAgent not initialized"}), 400
+    return jsonify({"memory": agent.get_memory()})
+
+@app.route('/api/agent/memory', methods=['POST'])
+def update_agent_memory():
+    """API endpoint to update the agent memory."""
+    if not agent:
+        return jsonify({"error": "PokeAgent not initialized"}), 400
+    
+    data = request.json
+    memory = data.get('memory')
+    
+    if not memory:
+        return jsonify({"error": "Memory content required"}), 400
+    
+    agent.update_memory(memory)
+    return jsonify({"status": "success", "message": "Memory updated"})
 
 
 @socketio.on('connect')
