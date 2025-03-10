@@ -286,10 +286,6 @@ def index():
 def controller():
     return render_template('controller.html')
 
-@app.route('/game_state')
-def game_state():
-    return render_template('game_state.html')
-
 @app.route('/api/screen', methods=['GET'])
 def get_screen():
     if not agent:
