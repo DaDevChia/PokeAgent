@@ -1,10 +1,5 @@
 import os
-# Force SDL audio to use a dummy driver (prevents sound initialization)
-os.environ["SDL_AUDIODRIVER"] = "dummy"
-
 import logging
-# Mute sound logging from PyBoy (suppress CRITICAL messages)
-logging.getLogger('pyboy.core.sound').handlers.clear()
 
 import time
 import json
