@@ -32,6 +32,17 @@ def print_json(data):
 def walk_around_demo():
     # Add a new agent thought
     thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+    thought_response = add_agent_thought("This is a test thought 2.")
+
     print("\nAdd agent thought response:")
     print_json(thought_response)
     
@@ -41,7 +52,19 @@ def walk_around_demo():
     print_json(thoughts)
 
     # Add a new memory
-    memory_response = add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+    add_memory("This is a test memory.")
+
 
     # Get all memories
     memories = get_memory()

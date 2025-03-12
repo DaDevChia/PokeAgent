@@ -6,6 +6,9 @@
     <title>PokeAgent - Agent Thoughts</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        html {
+            font-size: 10px;
+        }
         body {
             background-color: #9bbc0f;
             font-family: 'Press Start 2P', cursive, sans-serif;
@@ -13,12 +16,10 @@
             padding: 0;
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
+            max-height: 600px;
         }
         
         .gameboy-container {
-            width: 90%;
-            max-width: 800px;
             margin: 20px auto;
             background-color: #a4c2a8;
             border-radius: 15px;
@@ -27,12 +28,8 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-        }
-        
-        .gameboy-header {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #0f380f;
+            max-width: 60rem;
+            max-height: 100rem;
         }
         
         .screens-container {
@@ -40,6 +37,9 @@
             flex-direction: column;
             gap: 20px;
             flex: 1;
+            overflow: hidden;
+            max-width: 60rem;
+            max-height: 100rem;
         }
         
         .screen {
@@ -52,19 +52,21 @@
         }
         
         .thoughts-screen {
-            height: 75%;
+            height: 80%;
+            overflow: hidden;
         }
         
         .memory-screen {
-            height: 25%;
+            height: 20%;
+            overflow: hidden;
         }
         
         .thoughts-display {
             height: 100%;
-            overflow-y: auto;
+            overflow-y: scroll;
             padding: 10px;
             color: #9bbc0f;
-            font-size: 14px;
+            font-size: 1.5rem;
             line-height: 1.5;
             scrollbar-width: thin;
             scrollbar-color: #8bac0f #0f380f;
@@ -73,7 +75,7 @@
         .memory-display {
             height: 100%;
             color: #9bbc0f;
-            font-size: 14px;
+            font-size: 1.5rem;
             line-height: 1.5;
             overflow-y: auto;
             scrollbar-width: thin;
@@ -115,7 +117,7 @@
         }
         
         .thought-time {
-            font-size: 10px;
+            font-size: 1rem;
             color: #7a9d0e;
             margin-bottom: 8px;
         }
@@ -140,7 +142,7 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 1.25rem;
         }
         
         .control-button:hover {
@@ -160,7 +162,7 @@
             text-align: center;
             margin: 5px 0;
             text-transform: uppercase;
-            font-size: 12px;
+            font-size: 1.25rem;
             color: #7a9d0e;
             padding: 5px;
             background-color: rgba(15, 56, 15, 0.5);
@@ -230,7 +232,7 @@
             border: none;
             border-radius: 5px;
             font-family: 'Press Start 2P', cursive;
-            font-size: 10px;
+            font-size: 1rem;
             text-decoration: none;
             text-align: center;
         }
@@ -249,10 +251,6 @@
     </div>
     
     <div class="gameboy-container">
-        <div class="gameboy-header">
-            <h1>POKEAGENT</h1>
-            <h2>Agent Monitor</h2>
-        </div>
         
         <div class="screens-container">
             <!-- Thoughts Screen -->
@@ -329,63 +327,6 @@
                 updateMemoryDisplay(data.memory);
             });
             
-            // Function to dynamically adjust text size
-            function adjustTextSize(container, content, minSize = 5) {
-                // Calculate available height (accounting for padding, etc.)
-                const availableHeight = container.clientHeight - 
-                                      parseInt(window.getComputedStyle(container).paddingTop) - 
-                                      parseInt(window.getComputedStyle(container).paddingBottom);
-                
-                // Start with the original size from CSS
-                let fontSize = 14;
-                let allItems;
-                
-                // Check if we're dealing with thought items or a single text element
-                if (content.classList.contains('thoughts-display')) {
-                    allItems = content.querySelectorAll('.thought-item');
-                    
-                    // If there are thought items, adjust their font size
-                    if (allItems.length > 0) {
-                        // Try different font sizes until content fits
-                        while (fontSize > minSize) {
-                            // Apply font size to all items
-                            allItems.forEach(item => {
-                                item.style.fontSize = `${fontSize}px`;
-                                
-                                // Also adjust the time element which is smaller
-                                const timeElement = item.querySelector('.thought-time');
-                                if (timeElement) {
-                                    timeElement.style.fontSize = `${Math.max(fontSize - 4, 6)}px`;
-                                }
-                            });
-                            
-                            // Check if content fits
-                            if (content.scrollHeight <= availableHeight || fontSize <= minSize) {
-                                break;
-                            }
-                            
-                            // Reduce font size and try again
-                            fontSize -= 0.5;
-                        }
-                    }
-                } else {
-                    // For memory display (single text element)
-                    while (fontSize > minSize) {
-                        content.style.fontSize = `${fontSize}px`;
-                        
-                        // Check if content fits
-                        if (content.scrollHeight <= availableHeight || fontSize <= minSize) {
-                            break;
-                        }
-                        
-                        // Reduce font size and try again
-                        fontSize -= 0.5;
-                    }
-                }
-                
-                return fontSize;
-            }
-            
             // Function to add a new thought
             function addThought(thoughtText) {
                 const now = new Date();
@@ -437,9 +378,6 @@
                 if (autoScroll) {
                     thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
                 }
-                
-                // Adjust text size to fit
-                adjustTextSize(thoughtsScreen, thoughtsDisplay);
             }
             
             // Update the memory display
@@ -456,9 +394,6 @@
                 const cursor = document.createElement('span');
                 cursor.className = 'blink-cursor';
                 memoryDisplay.appendChild(cursor);
-                
-                // Adjust text size to fit
-                adjustTextSize(memoryScreen, memoryDisplay);
             }
             
             // Fetch and update memory
@@ -489,12 +424,6 @@
                 if (autoScroll) {
                     thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
                 }
-            });
-            
-            // Handle window resize
-            window.addEventListener('resize', () => {
-                adjustTextSize(thoughtsScreen, thoughtsDisplay);
-                adjustTextSize(memoryScreen, memoryDisplay);
             });
             
             // Fetch initial thoughts if any
