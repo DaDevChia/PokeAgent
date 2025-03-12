@@ -450,12 +450,14 @@ def handle_connect():
 def handle_disconnect():
     pass
 
-import atexit
-@atexit.register
-def cleanup():
-    if agent:
-        agent.close()
-
 if __name__ == '__main__':
-    agent = PokeAgent("PokemonRed.gb", window_type="SDL2")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True, use_reloader=False)
+    # Use OpenGL window type on MacOS
+    if os.name == 'posix':
+        agent = PokeAgent("PokemonRed.gb", window_type="OpenGL")
+    elif os.name == 'nt':
+        agent = PokeAgent("PokemonRed.gb", window_type="SDL2")
+    else:
+        agent = None
+        print("Unsupported OS. PokeAgent not initialized.")
+    # Use port 151 (number of Pokemon in Red), since Airdrop uses 5000
+    socketio.run(app, host='0.0.0.0', port=151, debug=True, use_reloader=False)

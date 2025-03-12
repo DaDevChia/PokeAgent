@@ -17,11 +17,19 @@ PokeAgent is a Flask-based web application that provides an API for controlling 
 - A legally obtained Pokemon Red ROM file (not included)
 - An initial save state (optional but recommended)
 
+### If you are using MacOS
+- Install Glut and XQuartz
+  ```bash
+  brew install freeglut
+  brew cask install xquartz
+  ```
+- Log out and log back in to apply the changes
+
 ## Installation
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/pokeagent.git
+   git clone https://github.com/dadevchia/pokeagent.git
    cd pokeagent
    ```
 

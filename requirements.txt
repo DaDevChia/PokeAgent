@@ -6,5 +6,8 @@ Pillow
 numpy
 python-socketio
 flask-socketio
-eventlet
 requests
+
+# MacOS Support
+PyOpenGL
+PyOpenGL_accelerate
