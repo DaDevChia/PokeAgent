@@ -6,98 +6,139 @@
     <title>PokeAgent - Agent Thoughts</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        html {
-            font-size: 10px;
+        :root {
+            --primary-bg: #9bbc0f;
+            --container-bg: #a4c2a8;
+            --screen-bg: #0f380f;
+            --screen-border: #8bac0f;
+            --text-color: #9bbc0f;
+            --text-dim: #7a9d0e;
+            --button-hover: #306230;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --gameboy-width: min(90vw, 800px);
+            --gameboy-height: min(80vh, 600px);
         }
-        body {
-            background-color: #9bbc0f;
-            font-family: 'Press Start 2P', cursive, sans-serif;
+        
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+        
+        html {
+            font-size: 62.5%; /* 10px at default browser settings */
+        }
+        
+        body {
+            background-color: var(--primary-bg);
+            font-family: 'Press Start 2P', cursive, sans-serif;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            max-height: 600px;
+            padding: 2rem;
+            align-items: center;
+            justify-content: center;
         }
         
         .gameboy-container {
-            margin: 20px auto;
-            background-color: #a4c2a8;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
-            flex: 1;
+            background-color: var(--container-bg);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0.5rem 0.5rem 1.5rem var(--shadow);
             display: flex;
             flex-direction: column;
-            max-width: 60rem;
-            max-height: 100rem;
+            width: var(--gameboy-width);
+            height: var(--gameboy-height);
+            margin: 0 auto;
+            overflow: hidden;
         }
         
         .screens-container {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 1.5rem;
             flex: 1;
+            height: calc(100% - 5rem); /* Account for controls */
             overflow: hidden;
-            max-width: 60rem;
-            max-height: 100rem;
         }
         
         .screen {
-            background-color: #0f380f;
-            border: 10px solid #8bac0f;
-            border-radius: 10px;
-            padding: 10px;
+            background-color: var(--screen-bg);
+            border: 0.8rem solid var(--screen-border);
+            border-radius: 1rem;
+            padding: 1rem;
             position: relative;
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
         }
         
         .thoughts-screen {
-            height: 80%;
-            overflow: hidden;
+            flex: 3;
+            max-height: 70%;
+            display: flex;
+            flex-direction: column;
         }
         
         .memory-screen {
-            height: 20%;
+            flex: 1;
+            max-height: 25%;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .memory-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            position: relative;
             overflow: hidden;
+            max-height: calc(100% - 2.5rem);
         }
         
         .thoughts-display {
-            height: 100%;
-            overflow-y: scroll;
-            padding: 10px;
-            color: #9bbc0f;
-            font-size: 1.5rem;
-            line-height: 1.5;
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            color: var(--text-color);
+            font-size: clamp(0.8rem, 1vw, 1.6rem);
+            line-height: 1.6;
             scrollbar-width: thin;
-            scrollbar-color: #8bac0f #0f380f;
+            scrollbar-color: var(--screen-border) var(--screen-bg);
+            max-height: 100%;
         }
         
         .memory-display {
-            height: 100%;
-            color: #9bbc0f;
-            font-size: 1.5rem;
-            line-height: 1.5;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: #8bac0f #0f380f;
+            color: var(--text-color);
+            line-height: 1.2;
             word-wrap: break-word;
             white-space: pre-wrap;
+            text-align: left;
+            height: auto;
+            width: 100%;
+            padding: 0.5rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .thoughts-display::-webkit-scrollbar,
         .memory-display::-webkit-scrollbar {
-            width: 8px;
+            width: 0.8rem;
         }
         
         .thoughts-display::-webkit-scrollbar-track,
         .memory-display::-webkit-scrollbar-track {
-            background: #0f380f;
+            background: var(--screen-bg);
         }
         
         .thoughts-display::-webkit-scrollbar-thumb,
         .memory-display::-webkit-scrollbar-thumb {
-            background-color: #8bac0f;
-            border-radius: 4px;
+            background-color: var(--screen-border);
+            border-radius: 0.4rem;
         }
         
         .screen-overlay {
@@ -110,69 +151,66 @@
         }
         
         .thought-item {
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 2px dashed #8bac0f;
+            margin-bottom: 1.6rem;
+            padding-bottom: 1.6rem;
+            border-bottom: 0.2rem dashed var(--screen-border);
             animation: fadeIn 0.5s ease-in;
         }
         
         .thought-time {
-            font-size: 1rem;
-            color: #7a9d0e;
-            margin-bottom: 8px;
+            font-size: clamp(0.6rem, 0.8vw, 0.9rem);
+            color: var(--text-dim);
+            margin-bottom: 0.5rem;
         }
         
         .thought-content {
             word-wrap: break-word;
             white-space: pre-wrap;
+            font-size: clamp(0.8rem, 1vw, 1.4rem);
         }
         
         .controls {
             display: flex;
             justify-content: center;
-            margin-top: 15px;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
         }
         
         .control-button {
-            background-color: #0f380f;
-            color: #9bbc0f;
+            background-color: var(--screen-bg);
+            color: var(--text-color);
             font-family: 'Press Start 2P', cursive;
-            padding: 8px 15px;
-            margin: 0 10px;
+            padding: 0.8rem 1.5rem;
             border: none;
-            border-radius: 5px;
+            border-radius: 0.5rem;
             cursor: pointer;
-            font-size: 1.25rem;
+            font-size: clamp(1rem, 1.2vw, 1.3rem);
+            transition: background-color 0.2s;
         }
         
         .control-button:hover {
-            background-color: #306230;
+            background-color: var(--button-hover);
         }
         
         .blink-cursor {
             display: inline-block;
-            width: 8px;
-            height: 14px;
-            background-color: #9bbc0f;
-            margin-left: 2px;
+            width: 0.8rem;
+            height: 1.4rem;
+            background-color: var(--text-color);
+            margin-left: 0.2rem;
             animation: blink 1s step-end infinite;
         }
         
         .section-title {
             text-align: center;
-            margin: 5px 0;
+            margin: 0.5rem 0 1rem 0;
             text-transform: uppercase;
-            font-size: 1.25rem;
-            color: #7a9d0e;
-            padding: 5px;
+            font-size: clamp(1rem, 1.3vw, 1.4rem);
+            color: var(--text-dim);
+            padding: 0.5rem;
             background-color: rgba(15, 56, 15, 0.5);
-            border-radius: 4px;
-        }
-        
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            height: calc(100% - 40px); /* Account for section titles */
+            border-radius: 0.4rem;
         }
         
         @keyframes blink {
@@ -187,7 +225,7 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(1rem);
             }
             to {
                 opacity: 1;
@@ -212,46 +250,119 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 40px;
+            height: 4rem;
             background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
             pointer-events: none;
-            border-radius: 5px 5px 0 0;
+            border-radius: 0.5rem 0.5rem 0 0;
         }
         
         .navigation-links {
             display: flex;
             justify-content: center;
-            margin: 20px 0;
-            gap: 20px;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
         }
         
         .nav-button {
-            padding: 10px 15px;
-            background-color: #8bac0f;
-            color: #0f380f;
+            padding: 1rem 1.5rem;
+            background-color: var(--screen-border);
+            color: var(--screen-bg);
             border: none;
-            border-radius: 5px;
+            border-radius: 0.5rem;
             font-family: 'Press Start 2P', cursive;
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 1.1vw, 1.2rem);
             text-decoration: none;
             text-align: center;
+            transition: background-color 0.2s;
         }
         
         .nav-button:hover {
-            background-color: #9bbc0f;
-            color: #0f380f;
+            background-color: var(--primary-bg);
+        }
+        
+        @media (max-width: 768px) {
+            .gameboy-container {
+                padding: 1.2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .control-button {
+                width: 100%;
+                max-width: 30rem;
+                font-size: 0.9rem;
+            }
+            
+            .blink-cursor {
+                width: 0.6rem;
+                height: 1rem;
+            }
+            
+            .screens-container {
+                gap: 1rem;
+            }
+            
+            .screen {
+                border-width: 0.6rem;
+                padding: 0.8rem;
+            }
+            
+            .memory-display {
+                font-size: 0.7rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 0.8rem;
+            }
+            
+            .gameboy-container {
+                padding: 0.8rem;
+                border-radius: 1rem;
+            }
+            
+            .navigation-links {
+                flex-direction: column;
+                align-items: center;
+                margin-bottom: 1rem;
+            }
+            
+            .nav-button {
+                width: 100%;
+                max-width: 30rem;
+                font-size: 0.8rem;
+                padding: 0.8rem 1rem;
+            }
+            
+            .thought-item {
+                margin-bottom: 0.8rem;
+                padding-bottom: 0.8rem;
+            }
+            
+            .section-title {
+                font-size: 0.9rem;
+                margin: 0.3rem 0 0.5rem 0;
+            }
+            
+            .memory-display {
+                font-size: 0.65rem;
+                padding: 0.3rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="navigation-links">
         <a href="/" class="nav-button">GAME VIEW</a>
-        <a href="/agent/thoughts" class="nav-button">AGENT THOUGHTS</a>
         <a href="/controller" class="nav-button">CONTROLLER</a>
     </div>
     
     <div class="gameboy-container">
-        
         <div class="screens-container">
             <!-- Thoughts Screen -->
             <div class="screen thoughts-screen">
@@ -273,8 +384,10 @@
                 <div class="screen-overlay pixelated-overlay"></div>
                 <div class="screen-overlay screen-glare"></div>
                 <div class="section-title">Memory System</div>
-                <div class="memory-display" id="memory-display">
-                    Initializing memory system...<span class="blink-cursor"></span>
+                <div class="memory-content">
+                    <div class="memory-display" id="memory-display">
+                        Initializing memory system...<span class="blink-cursor"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -294,11 +407,44 @@
             let thoughtsArray = [];
             let autoScroll = true;
             const thoughtsDisplay = document.getElementById('thoughts-display');
-            const thoughtsScreen = document.querySelector('.thoughts-screen');
             const memoryDisplay = document.getElementById('memory-display');
-            const memoryScreen = document.querySelector('.memory-screen');
             const clearBtn = document.getElementById('clear-btn');
             const autoscrollBtn = document.getElementById('autoscroll-btn');
+            
+            // Set fixed gameboy dimensions and make text fit
+            function setFixedGameboySize() {
+                const container = document.querySelector('.gameboy-container');
+                const computedStyle = window.getComputedStyle(container);
+                const width = computedStyle.getPropertyValue('width');
+                const height = computedStyle.getPropertyValue('height');
+                
+                container.style.width = width;
+                container.style.height = height;
+                
+                // Make sure text fits in memory display
+                setTimeout(fitTextToContainer, 100);
+                
+                // Add resize listener for when orientation changes
+                window.addEventListener('resize', function() {
+                    // Adjust the fixed size on resize to maintain responsiveness
+                    const newWidth = getComputedValue('--gameboy-width');
+                    const newHeight = getComputedValue('--gameboy-height');
+                    
+                    container.style.width = newWidth;
+                    container.style.height = newHeight;
+                    
+                    // Delay to let the browser settle after resize
+                    setTimeout(fitTextToContainer, 200);
+                });
+            }
+            
+            // Helper function to get computed CSS variable value
+            function getComputedValue(variable) {
+                return getComputedStyle(document.documentElement).getPropertyValue(variable);
+            }
+            
+            // Set fixed dimensions after page loads
+            window.addEventListener('load', setFixedGameboySize);
             
             console.log("Initializing agent thoughts page...");
             
@@ -380,7 +526,7 @@
                 }
             }
             
-            // Update the memory display
+            // Update the memory display with fixed text sizing
             function updateMemoryDisplay(memory) {
                 // Remove any existing cursor
                 const existingCursor = memoryDisplay.querySelector('.blink-cursor');
@@ -390,10 +536,59 @@
                 
                 memoryDisplay.textContent = memory || "No memory stored.";
                 
-                // Add blinking cursor
-                const cursor = document.createElement('span');
-                cursor.className = 'blink-cursor';
-                memoryDisplay.appendChild(cursor);
+                // Apply text scaling to fit container after a small delay to ensure DOM is updated
+                setTimeout(fitTextToContainer, 10);
+                
+                // Add blinking cursor at the end
+                setTimeout(() => {
+                    // Only add cursor if it doesn't already exist
+                    if (!memoryDisplay.querySelector('.blink-cursor')) {
+                        const cursor = document.createElement('span');
+                        cursor.className = 'blink-cursor';
+                        memoryDisplay.appendChild(cursor);
+                    }
+                }, 20);
+            }
+            
+            // Function to scale memory text to fit container
+            function fitTextToContainer() {
+                const memoryScreen = document.querySelector('.memory-screen');
+                const memoryContent = document.querySelector('.memory-content');
+                const memoryDisplay = document.querySelector('.memory-display');
+                
+                if (!memoryScreen || !memoryContent || !memoryDisplay) return;
+                
+                // Calculate line height based on container height
+                const titleHeight = memoryScreen.querySelector('.section-title').offsetHeight;
+                const availableHeight = memoryScreen.clientHeight - titleHeight - 20; // 20px buffer
+                
+                // Start with a reasonable font size (responsive to screen size)
+                const containerWidth = memoryScreen.clientWidth;
+                let fontSize;
+                
+                // Scale font size based on container width
+                if (containerWidth < 300) {
+                    fontSize = 0.8; // Very small screens
+                } else if (containerWidth < 500) {
+                    fontSize = 1.0; // Small screens
+                } else {
+                    fontSize = 1.2; // Normal screens
+                }
+                
+                // Apply font size
+                memoryDisplay.style.fontSize = `${fontSize}rem`;
+                
+                // Set line-clamp based on available height
+                const lineHeight = parseFloat(getComputedStyle(memoryDisplay).lineHeight);
+                const maxLines = Math.floor(availableHeight / lineHeight);
+                
+                // Set appropriate number of lines to display
+                if (maxLines > 0) {
+                    memoryDisplay.style.webkitLineClamp = maxLines;
+                    memoryDisplay.style.maxHeight = `${maxLines * lineHeight}px`;
+                }
+                
+                console.log("Memory text fitted: font size =", fontSize + "rem", "max lines =", maxLines);
             }
             
             // Fetch and update memory

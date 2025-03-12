@@ -2,7 +2,7 @@ import requests
 import json
 
 # Configuration
-BASE_URL = "http://localhost:5000/api"
+BASE_URL = "http://localhost:151/api"
 
 
 def get_agent_thoughts():
@@ -51,19 +51,8 @@ def walk_around_demo():
     print("\nAgent thoughts:")
     print_json(thoughts)
 
-    # Add a new memory
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
-    add_memory("This is a test memory.")
+    # Add a new fat memory
+    add_memory("This is a tesasdjo sjdioja ojsdojodjoa jsodjosjdosjaod joajsdojoasjdojasodjoajsdjaosjdojaosdjoasjo  djsaojdoajsdoasj odsjoasjdojasodjosajsodjaojsdosajodjosajdoa ojsdo sodjosjdojasodjoasjdojaodjosjdojasosdjo asdjot memory.")
 
 
     # Get all memories
