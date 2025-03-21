@@ -391,11 +391,6 @@
                 </div>
             </div>
         </div>
-        
-        <div class="controls">
-            <button class="control-button" id="clear-btn">CLEAR THOUGHTS</button>
-            <button class="control-button" id="autoscroll-btn">AUTOSCROLL: ON</button>
-        </div>
     </div>
 
     <!-- Socket.IO script -->
@@ -405,11 +400,8 @@
         // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', () => {
             let thoughtsArray = [];
-            let autoScroll = true;
             const thoughtsDisplay = document.getElementById('thoughts-display');
             const memoryDisplay = document.getElementById('memory-display');
-            const clearBtn = document.getElementById('clear-btn');
-            const autoscrollBtn = document.getElementById('autoscroll-btn');
             
             // Set fixed gameboy dimensions and make text fit
             function setFixedGameboySize() {
@@ -519,11 +511,7 @@
                     cursor.className = 'blink-cursor';
                     lastThought.appendChild(cursor);
                 }
-                
-                // Auto-scroll to bottom
-                if (autoScroll) {
-                    thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
-                }
+                thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
             }
             
             // Update the memory display with fixed text sizing
@@ -604,22 +592,6 @@
                     });
             }
             
-            // Clear thoughts button
-            clearBtn.addEventListener('click', () => {
-                thoughtsArray = [];
-                renderThoughts();
-                addThought("Thought buffer cleared.");
-            });
-            
-            // Toggle auto-scroll
-            autoscrollBtn.addEventListener('click', () => {
-                autoScroll = !autoScroll;
-                autoscrollBtn.textContent = `AUTOSCROLL: ${autoScroll ? 'ON' : 'OFF'}`;
-                
-                if (autoScroll) {
-                    thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
-                }
-            });
             
             // Fetch initial thoughts if any
             fetch('/api/agent/thoughts')
