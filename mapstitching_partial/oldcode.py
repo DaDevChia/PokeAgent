@@ -1,4 +1,438 @@
+def clean_patches(patch_heights, patch_widths, img):
+    """
+    Generates patches based on the provided image and patch dimensions.
 
+    Parameters:
+        patch_heights (list): List containing heights of patches [ph, ph2].
+        patch_widths (list): List containing widths of patches [pw, pw2].
+        img (numpy array): The original image for reference.
+
+    Returns:
+        patches (list of lists): A 2D list of generated patches.
+    """
+    patches = []
+    img_h, img_w = img.shape[:2]
+    curr_y = 0
+
+    for ph in patch_heights:
+        curr_x = 0
+        row_patches = []
+        for pw in patch_widths:
+            # Extract patch from the image
+            patch = img[curr_y:curr_y + ph, curr_x:curr_x + pw]
+            row_patches.append(patch)
+            curr_x += pw
+        patches.append(row_patches)
+        curr_y += ph
+
+    return patches
+
+def stitch_image_old(patches):
+    """
+    Reconstructs an image from patches with varying sizes.
+
+    Parameters:
+        patches (list of lists): A 2D list where each element is a cv2 image patch.
+
+    Returns:
+        stitched_img (numpy array): The reconstructed full image.
+    """
+    patches = clean_patches(patches)
+    print([Counter([x.shape for x in row]) for row in patches])
+    rows, cols = len(patches), len(patches[0])  # Get grid size
+    
+    # Determine the total stitched image height and width dynamically
+    stitched_h = sum(patches[i][0].shape[0] for i in range(rows))  # Sum of patch heights per row
+    stitched_w = sum(patches[0][j].shape[1] for j in range(cols))  # Sum of patch widths per column
+    
+    # Create an empty canvas for the stitched image
+    stitched_img = np.zeros((stitched_h, stitched_w), dtype=patches[0][0].dtype)
+
+    # Fill in the patches at correct positions
+    y_offset = 0
+    for i in range(rows):
+        x_offset = 0
+        for j in range(cols):
+            patch = patches[i][j]
+            h, w = patch.shape[:2]  # Get patch height and width
+            stitched_img[y_offset:y_offset + h, x_offset:x_offset + w] = patch
+            x_offset += w  # Move right for the next patch
+        y_offset += patches[i][0].shape[0]  # Move down for the next row
+
+    return stitched_img
+
+
+    # if canvas is None:
+    #     print(f"New image {img_path.split('/')[-1]} due to no match.")
+    #     crop_image_cv, crop_color = next_crop_image_cv, next_color
+    #     cv2.imshow(f"new image {img_path.split('/')[-1]}", resize_image(crop_color))
+    # else:
+    #     stitched_image_mid = stitch_images(canvas, array1_coord, array2_coord, crop_color, next_color)
+    #     cv2.imshow(f"merged {img_path.split('/')[-1]}", resize_image(stitched_image_mid))
+    #     crop_image_cv, crop_color = next_crop_image_cv, next_color
+
+
+# print(os.getcwd())
+# map_path = os.path.join(os.getcwd(),'mapstitching_incomplete/manual_stitch.png')
+# map_img = load_img(map_path)
+# counter_map = Counter(map_img.getdata())
+# print(counter_map)
+# print((248, 248, 248, 255) in counter_map) # False: can use dialogue checker
+# print((0, 0, 0, 255) in counter_map) # True: careful of matching blacks
+# print((243, 243, 243, 255) in counter_map) # False: Pyboy interface (Grey) is ok to crop out
+
+# sprite_path = os.path.join(os.getcwd(),'mapstitching_incomplete/characters_front_house_notrans.png')
+# sprite_img = load_img(sprite_path)
+
+# test_path = os.path.join(os.getcwd(),'mapstitching_incomplete/images/House4.png')
+# test_img = load_img(test_path)
+# cropped_img = crop_to_game_area(test_img)
+# crop2_image, has_dialogue = contains_dialogue(cropped_img)
+# print(crop2_image.size)
+
+# if has_dialogue:
+#     print("TRUE")
+
+# crop2_image_cv = convertPILToCV2(crop2_image)
+# crop2_image_cv_patches = split_into_patches(crop2_image_cv, grid_size=(9, 10))
+# print(crop2_image_cv_patches.shape)
+
+# crop2_image_cv_gridded = draw_grid_from_patch_array(crop2_image_cv, crop2_image_cv_patches)
+
+# next_path = os.path.join(os.getcwd(),'mapstitching_incomplete/images/House5.png')
+# next_img = load_img(next_path)
+# next_img = crop_to_game_area(next_img)
+# next_crop_image, next_has_dialogue = contains_dialogue(next_img)
+# next_crop_image_cv = convertPILToCV2(next_crop_image)
+
+# next_patches = split_into_patches(next_crop_image_cv, grid_size=(9, 10))
+# print(next_patches.shape)
+
+# next_patches_gridded = draw_grid_from_patch_array(next_crop_image_cv, next_patches)
+
+
+def draw_grid_from_patch_array(image, patches, color=(255, 0, 0), thickness=1):
+    """
+    Draws a grid on the image using the actual patches array from split_into_patches.
+
+    Parameters:
+        image (numpy array): The input image.
+        patches (numpy array): The split patches array from split_into_patches().
+        color (tuple): Color of the grid lines (default is green).
+        thickness (int): Thickness of grid lines (default is 1).
+
+    Returns:
+        numpy array: Image with the grid drawn.
+    """
+    grid_img = image.copy()
+    gh, gw = patches.shape  # Get patch grid dimensions
+
+    currx, curry = 0, 0
+    for row in range(gh):
+        if row%2 == 0:
+            color = (255, 0, 0)
+        else:
+            color = (0, 255, 0)
+        for col in range(gw):
+            # Calculate top-left and bottom-right corners of each patch
+            y1, x1 = patches[row][col].shape
+            # Draw rectangle on the image
+            cv2.rectangle(grid_img, (currx, curry), (x1, curry+y1), color, thickness)
+            currx = currx+x1
+        y1, x1 = patches[row][-1].shape
+        cv2.rectangle(grid_img, (currx, curry), (x1, y1), color, thickness)
+        curry = curry+y1
+        currx = 0
+    return grid_img
+
+def match_patches(patch1, patch2):
+    """Uses cv2.matchTemplate to compare two patches and return the match score."""
+    if patch1 is None or patch2 is None or np.all(patch1 == 0) or np.all(patch2 == 0):
+        return -1  # Skip matching if any patch is missing (None)
+    try:
+        result = cv2.matchTemplate(patch1, patch2, cv2.TM_CCOEFF_NORMED)
+    except:
+        try:
+            result = cv2.matchTemplate(patch2, patch1, cv2.TM_CCOEFF_NORMED)
+        except Exception as e:
+            print(f"Error matching patches: {e}")
+            return -1   
+    return result.max()  # Extract the best match score
+
+def determine_displacement_and_stitch_OLD(array1, array2):
+    """
+    Determines the best displacement direction by generating patches for array1 and array2
+    based on their respective patch settings. Returns the coordinates for stitching array2
+    to array1 and the direction.
+
+    Parameters:
+        array1 (numpy array): First image.
+        array2 (numpy array): Second image.
+        array1_patch_settings (tuple): Patch settings for array1 ([ph, ph2], [pw, pw2], grid_size).
+        array2_patch_settings (tuple): Patch settings for array2 ([ph, ph2], [pw, pw2], grid_size).
+
+    Returns:
+        coordinates (tuple): Coordinates for stitching array2 to array1.
+        best_direction (str): The determined displacement direction ('up', 'down', 'left', 'right').
+    """
+    best_score = -1
+    best_direction = None
+    best_coordinates = None
+
+    # Check Up (array2 is above array1)
+    up_scores = [
+        match_patches(array1_patches[i][j], array2_patches[i + 1][j])
+        for i in range(len(array1_patches) - 1)
+        for j in range(len(array1_patches[0]))
+    ]
+    up_score = np.mean(up_scores) if up_scores else -1
+    if up_score > best_score:
+        best_score = up_score
+        best_direction = "up"
+        best_coordinates = (0, -1)  # Relative position of array2 to array1
+
+    # Check Down (array2 is below array1)
+    down_scores = [
+        match_patches(array1_patches[i + 1][j], array2_patches[i][j])
+        for i in range(len(array1_patches) - 1)
+        for j in range(len(array1_patches[0]))
+    ]
+    down_score = np.mean(down_scores) if down_scores else -1
+    if down_score > best_score:
+        best_score = down_score
+        best_direction = "down"
+        best_coordinates = (0, 1)
+
+    # Check Left (array2 is left of array1)
+    left_scores = [
+        match_patches(array1_patches[i][j], array2_patches[i][j + 1])
+        for i in range(len(array1_patches))
+        for j in range(len(array1_patches[0]) - 1)
+    ]
+    left_score = np.mean(left_scores) if left_scores else -1
+    if left_score > best_score:
+        best_score = left_score
+        best_direction = "left"
+        best_coordinates = (-1, 0)
+
+    # Check Right (array2 is right of array1)
+    right_scores = [
+        match_patches(array1_patches[i][j + 1], array2_patches[i][j])
+        for i in range(len(array1_patches))
+        for j in range(len(array1_patches[0]) - 1)
+    ]
+    right_score = np.mean(right_scores) if right_scores else -1
+    if right_score > best_score:
+        best_score = right_score
+        best_direction = "right"
+        best_coordinates = (1, 0)
+
+    return best_coordinates, best_direction
+
+def match_sprites(patch, sprites):
+    # Convert PIL image to BGR (OpenCV uses BGR format)
+    if sprites.mode == "RGBA":
+        sprites = sprites.convert("RGB")
+    if patch.mode == "RGBA":
+        patch = patch.convert("RGB")
+    sprites_cv = cv2.cvtColor(np.array(sprites), cv2.COLOR_RGB2BGR)
+    patch_cv = cv2.cvtColor(np.array(patch), cv2.COLOR_RGB2BGR)
+
+    # Convert to grayscale (optional but improves matching)
+    sprites_gray = cv2.cvtColor(sprites_cv, cv2.COLOR_BGR2GRAY)
+    patch_gray = cv2.cvtColor(patch_cv, cv2.COLOR_BGR2GRAY)     
+
+    # ORB detector
+    orb = cv2.ORB_create()
+
+    # Find keypoints and descriptors
+    kp1, des1 = orb.detectAndCompute(patch_gray, None)
+    kp2, des2 = orb.detectAndCompute(sprites_gray, None)
+
+    # BFMatcher (Brute Force Matching)
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+    matches = bf.match(des1, des2)
+
+    # Sort matches based on distance
+    matches = sorted(matches, key=lambda x: x.distance)
+
+    # Draw matches
+    matched_img = cv2.drawMatches(patch_gray, kp1, sprites_gray, kp2, matches[:10], None, flags=2)
+
+    cv2.imshow("ORB Feature Matching", matched_img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+def remove_sprites(raw_image):
+    # Convert PIL image to BGR (OpenCV uses BGR format)
+    if raw_image.mode == "RGBA":
+        raw_image = raw_image.convert("RGB")
+    raw_image_cv = cv2.cvtColor(np.array(raw_image), cv2.COLOR_RGB2BGR)
+
+    # Convert to grayscale (optional but improves matching)
+    raw_image_gray = cv2.cvtColor(raw_image_cv, cv2.COLOR_BGR2GRAY)
+
+    # Apply Canny Edge Detection
+    edges = cv2.Canny(raw_image_gray, 50, 200)
+
+    # Show result
+    cv2.imshow('Canny Edges', edges)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+    return edges
+
+def non_maximum_suppression(values, radius=1):
+    local_area = cv2.dilate(values, kernel=None, iterations=radius)
+    mask = (values == local_area)
+    return mask
+
+def match_image(patch, big_map):
+    # check for uninitialized big_map
+    if big_map.size == (1,1):
+        edgemap = remove_sprites(patch)
+    # Convert PIL image to BGR (OpenCV uses BGR format)
+    # if big_map.mode == "RGBA":
+    #     big_map = big_map.convert("RGB")
+    # if patch.mode == "RGBA":
+    #     patch = patch.convert("RGB")
+    big_map = np.array(big_map)
+    patch = np.array(patch)
+    if big_map.shape[-1] == 4:
+        big_map_gray = cv2.cvtColor(big_map, cv2.COLOR_BGRA2GRAY)  # Convert to grayscale
+    else:
+        big_map_gray = cv2.cvtColor(big_map, cv2.COLOR_BGR2GRAY)
+    if patch.shape[-1] == 4:
+        patch_gray = cv2.cvtColor(patch, cv2.COLOR_BGRA2GRAY)  # Convert to grayscale
+    else:
+        patch_gray = cv2.cvtColor(patch, cv2.COLOR_BGR2GRAY)        
+    # big_map_cv = cv2.cvtColor(np.array(big_map), cv2.COLOR_RGB2BGR)
+    # patch_cv = cv2.cvtColor(np.array(patch), cv2.COLOR_RGB2BGR)
+
+    # Convert to grayscale (optional but improves matching)
+    # big_map_gray = cv2.cvtColor(big_map_cv, cv2.COLOR_BGR2GRAY)
+    # # Crop the region of interest (ROI)
+    # big_map_gray = big_map_gray[5199:5393, 1360:1520]
+
+    # patch_gray = cv2.cvtColor(patch_cv, cv2.COLOR_BGR2GRAY)
+
+    # # Template matching
+
+
+    picture = big_map_gray
+    template =  patch_gray
+
+    print(template.shape, big_map_gray.shape)
+
+    assert template.shape[:2] == (117, 107), "template ought to be pixel perfect"
+    # assert template.shape[2] == 4, "template contains no alpha channel!"
+
+    cv2.imshow("bigmap", big_map_gray)
+    cv2.imshow("patch_cv", patch_gray)
+
+    # 54x54 empirically
+    template = cv2.resize(template, dsize=(54, 54), interpolation=cv2.INTER_CUBIC)
+    (th, tw) = template.shape[:2]
+
+    # separate alpha channel, construct binary mask for matchTemplate
+    # template_color = template[:,:,:3] if len(template.shape) == 3 else template
+    # template_alpha = template[:,:,3] if len(template.shape) == 3 else template template[:,:,3]
+    # template_mask = (template_mask >= 128).astype(np.uint8)
+    
+    template_color = template
+    template_alpha = np.ones(template.shape, dtype=np.uint8) * 255  # Default opaque
+    template_alpha[template > 250] = 0  # Make white areas transparent    
+    template_mask = (template >= 128).astype(np.uint8)
+
+    # theoretical maximum difference for this template
+    # (largest possible difference in every pixel and every color channel)
+    #maxdiff = template_mask.sum() * 255**2
+    maxdiff = np.maximum(template_color, 255-template_color) # worst case difference
+    # maxdiff *= np.uint8(template_mask)[:,:,np.newaxis] # apply mask
+    maxdiff *= np.uint8(template_mask)[:,:]
+    maxdiff = (maxdiff.astype(np.uint32)**2).sum() # sum of squared differences
+    print("maximal difference:", maxdiff)
+
+    #cv2.imshow("picture", picture)
+    # cv2.imshow("template",
+    #     np.hstack([template_color, cv2.cvtColor(template_alpha, cv2.COLOR_GRAY2BGR)])
+    # )
+
+    sqdiff_values = cv2.matchTemplate(image=picture, templ=template_color, method=cv2.TM_SQDIFF, mask=template_mask)
+
+    # only supposed to kill slopes of peaks, not anything that's below threshold
+    # radius 1 already effective if data is smooth; removes anything on a slope
+    # have to pass `-sqdiff_values` because sqdiff_values contains minima, this looks for maxima
+    peakmask = non_maximum_suppression(-sqdiff_values, radius=1)
+
+    # kill everything below threshold too
+    threshold = 0.10 # applies to sum of SQUARED differences
+    peakmask[sqdiff_values > maxdiff * threshold] = False
+
+    # (i,j)
+    loc = np.array(np.where(peakmask)).T
+
+    for pt in loc:
+        (i,j) = pt
+        print("pt", pt, "diff", (sqdiff_values[i,j] / maxdiff))
+        cv2.rectangle(picture, (j,i), (j + tw, i + th), (0,0,255), 2)
+
+    # cv2.imwrite("61a178bd038544749c64310a9812b5e35217fdd1-out.png", picture)
+    cv2.imshow("picture", picture)
+
+    cv2.waitKey(-1)
+    cv2.destroyAllWindows()
+
+    # print(big_map_gray.shape, patch_gray.shape)
+
+    # w, h = patch_gray.shape
+    # res = cv2.matchTemplate(big_map_gray,patch_gray,cv2.TM_CCOEFF_NORMED)
+    # threshold = 0.8
+    # loc = np.where( res >= threshold)
+    # for pt in zip(*loc[::-1]):
+    #     cv2.rectangle(big_map_cv, pt, (pt[0] + w, pt[1] + h), (0,0,255), 2)
+    #     if pt != None:
+    #         print(big_map_cv+" matched")
+    #         break
+    #     else:
+    #         continue
+
+    # cv2.imshow("Canny images", big_map_cv)
+
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+
+def yeet():
+    return None
+
+def stitchImage(oldcode):
+    # #stitch top
+    # if array2_coord[0] < 0:
+    #     if array2_coord[1] > 0:
+    #         stitchedxoffsets = [array2_coord[1], basex-array2_coord[1]+array2.shape[1]] if basex-array2_coord[1]+array2.shape[1]>0 else [array2_coord[1], 0]
+    #     if array2_coord[1] < 0:
+    #         stitchedxoffsets = [0, basex-array2_coord[1]-array2.shape[1]] if basex-array2_coord[1]+array2.shape[1]>0 else [0, 0]
+
+    #if array 2 is up from array 1: array1_coord = (0, pw)
+
+    # Stitch array2 to array1 based on the best match location
+    # Calculate the new dimensions for stitched_array
+    new_height = max(array1.shape[0], best_coordinates[1] + array2.shape[0])
+    new_width = max(array1.shape[1], best_coordinates[0] + array2.shape[1])
+
+    # Create a blank canvas with the new dimensions
+    stitched_array = np.zeros((new_height, new_width), dtype=array1.dtype)
+
+    # Copy array1 into the canvas
+    stitched_array[:array1.shape[0], :array1.shape[1]] = array1
+
+    # Calculate the actual coordinates for array2
+    x, y = best_coordinates
+    actual_x = max(0, x - pw)
+    actual_y = max(0, y - ph)
+
+    # Overlay array2 onto stitched_array, filling black for missing rows/columns
+    stitched_array[actual_y:actual_y + array2.shape[0], actual_x:actual_x + array2.shape[1]] = array2
 
 def tryfoundobject(big_map, patch):
     img_rgb = np.array(big_map)
