@@ -7,31 +7,37 @@ import numpy as np
 # load overall map from path
 def load_img(path):
     if not os.path.exists(path):
-        try:
-            # If the file does not exist, create a blank image
-            img = Image.new('RGBA', (1, 1), (255, 255, 255, 0))
-            img.save(path)
-            return Image.open(path)
-        except:
-            raise FileNotFoundError(f"The file at {path} does not exist.")
+        # try:
+        #     # If the file does not exist, create a blank image
+        #     img = Image.new('RGBA', (1, 1), (255, 255, 255, 0))
+        #     img.save(path)
+        #     return Image.open(path)
+        # except:
+        raise FileNotFoundError(f"The file at {path} does not exist.")
     return Image.open(path)
 
 def save_img(img, imgdir, img_name = "output.png"):
     maps_dir = os.path.join(os.getcwd(), 'maps')
     if not os.path.exists(maps_dir):
         os.makedirs(maps_dir)
-    if "Map" in img_name:
-        # Check for existing map files in the directory
-        existing_maps = [f for f in os.listdir(maps_dir) if f.startswith("Map_") and f.endswith(".png")]
-        if existing_maps:
-            # Extract the highest map number
-            max_map_num = max(int(f.split('_')[1].split('.')[0]) for f in existing_maps if f.split('_')[1].split('.')[0].isdigit())
-            img_name = f"Map_{max_map_num + 1}.png"
-        else:
-            # Start with Map_1 if no maps exist
-            img_name = "Map_1.png"
-        
-    img.save(os.path.join(imgdir, img_name)) if type(img) == Image.Image else cv2.imwrite(os.path.join(maps_dir, img_name), img)
+
+    # Overwrite the file if img_name already exists
+    if os.path.exists(os.path.join(imgdir, img_name)):
+        print(f"Overwriting existing file: {img_name}")
+        img.save(os.path.join(imgdir, img_name)) if isinstance(img, Image.Image) else cv2.imwrite(os.path.join(imgdir, img_name), img)
+    else:
+        if "Map" in img_name:
+            # Check for existing map files in the directory
+            existing_maps = [f for f in os.listdir(maps_dir) if f.startswith("Map_") and f.endswith(".png")]
+            if existing_maps:
+                # Extract the highest map number
+                max_map_num = max(int(f.split('_')[1].split('.')[0]) for f in existing_maps if f.split('_')[1].split('.')[0].isdigit())
+                img_name = f"Map_{max_map_num + 1}.png"
+            else:
+                # Start with Map_1 if no maps exist
+                img_name = "Map_1.png"
+        print(f"Saving new file: {img_name}")            
+        img.save(os.path.join(imgdir, img_name)) if type(img) == Image.Image else cv2.imwrite(os.path.join(maps_dir, img_name), img)
 
 # crop image to game area
 def crop_to_game_area(image, game_size = (966, 970)):
@@ -103,12 +109,21 @@ def contains_dialogue(image):
     cv2.destroyAllWindows()
 
 def convertPILToCV2(img, color = False):
-    img_np = np.array(img)
+    img_np = np.array(img) if type(img) != np.ndarray else img
     if img_np.shape[-1] == 4:
         img_np_cv = cv2.cvtColor(img_np, cv2.COLOR_RGBA2GRAY) if not color else cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGR) # Convert to grayscale
     else:
         img_np_cv = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY) if not color else cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR) # Convert to grayscale
     return img_np_cv
+
+def initialise_map(image_cv, save_path, map_name):
+    """Initializes a new map by cropping out the player and replacing with black."""
+    # image_cv = convertPILToCV2(image, color=True)
+    # Replace the player area with black
+    image_cv[402:402+107, 430:430+107] = 0
+    # Save the modified image as a new map
+    save_img(image_cv, save_path, map_name)
+    return image_cv
 
 def split_into_patches(img, grid_size=(9, 10)):
     """Splits an image into grid of (h, w) and returns patch sizes and grid size."""
@@ -362,7 +377,7 @@ def stitch_images(canvas, array1_coord, array2_coord, array1, array2):
     return stitched_array
 
 def extract_number(filename):
-    """Extracts the numeric part X from 'House_X.png' using isdigit()."""
+    """Extracts the numeric part X from 'YYYYX.png' using isdigit()."""
     parts = filename.split('.')  # Split at '.'
     if len(parts) > 1:  # Check if there are two parts
         return int("".join(filter(str.isdigit, parts[0])))  # Extract the number
@@ -378,7 +393,8 @@ def get_sorted_images(directory):
     Returns:
         sorted_files (list): List of sorted file paths.
     """
-    files = [f for f in os.listdir(directory) if f.startswith("House") and f.endswith(".png")]
+    # files = [f for f in os.listdir(directory) if f.startswith("House") and f.endswith(".png")]
+    files = [f for f in os.listdir(directory) if f.endswith(".png")]
 
     # Sort files based on the extracted number X
     sorted_files = sorted(files, key=extract_number)
