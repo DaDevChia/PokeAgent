@@ -1,2 +1,4 @@
 /.venv
 /__pycache__
+# all files that start with PokemonRed
+PokemonRed*

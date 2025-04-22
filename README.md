@@ -1,3 +1,5 @@
+# Disclaimer: This project is under an active development phase The code may contain bugs and incomplete features. We are looking for feedback and contributions to improve the project.
+
 # PokeAgent: Pokemon Red AI LLM Challenge Platform
 
 PokeAgent is a Flask-based web application that provides an API for controlling a Pokemon Red game using the PyBoy emulator. It allows AI agents, LLMs, or humans to interact with the game through a REST API and WebSocket interface.
@@ -27,6 +29,8 @@ PokeAgent is a Flask-based web application that provides an API for controlling 
 
 ## Installation
 
+### The default port number is 151. You can change it in app.py.
+
 1. Clone this repository:
    ```bash
    git clone https://github.com/dadevchia/pokeagent.git
@@ -42,11 +46,6 @@ PokeAgent is a Flask-based web application that provides an API for controlling 
 
 4. If you have an initial save state, place it in the project directory as `init.state`
 
-5. Run the setup script to copy required data files:
-   ```bash
-   python setup.py
-   ```
-
 ## Usage
 
 1. Start the Flask server:
@@ -55,8 +54,8 @@ PokeAgent is a Flask-based web application that provides an API for controlling 
    ```
 
 2. Open your web browser and navigate to:
-   - Main interface: http://localhost:5000/
-   - Mobile controller: http://localhost:5000/controller
+   - Main interface: http://localhost:{portNumber}/
+   - Mobile controller: http://localhost:{portNumber}/controller
 
 3. Click the "Initialize Game" button to start the emulator
 
@@ -89,29 +88,29 @@ PokeAgent is a Flask-based web application that provides an API for controlling 
 
 ### Press a button
 ```bash
-curl -X POST http://localhost:5000/api/button \
+curl -X POST http://localhost:{portNumber}/api/button \
   -H "Content-Type: application/json" \
   -d '{"button": "a", "delay": 1}'
 ```
 
 ### Get the current screen
 ```bash
-curl -X GET http://localhost:5000/api/screen?format=base64
+curl -X GET http://localhost:{portNumber}/api/screen?format=base64
 ```
 
 ### Get the current screen png
 ```bash
-curl -X GET http://localhost:5000/api/screen
+curl -X GET http://localhost:{portNumber}/api/screen
 ```
 
 ### Get game state
 ```bash
-curl -X GET http://localhost:5000/api/state
+curl -X GET http://localhost:{portNumber}/api/state
 ```
 
 ### Move to a location
 ```bash
-curl -X POST http://localhost:5000/api/move \
+curl -X POST http://localhost:{portNumber}/api/move \
   -H "Content-Type: application/json" \
   -d '{"x": 10, "y": 15, "max_steps": 100}'
 ```
@@ -128,7 +127,7 @@ import base64
 from PIL import Image
 from io import BytesIO
 
-BASE_URL = "http://localhost:5000/api"
+BASE_URL = "http://localhost:{portNumber}/api"
 
 # Initialize the game
 requests.post(f"{BASE_URL}/init", json={"rom_path": "PokemonRed.gb"})
@@ -140,9 +139,6 @@ screen_image = Image.open(BytesIO(base64.b64decode(screen_data)))
 
 # Get game state
 game_state = requests.get(f"{BASE_URL}/state").json()
-
-# Make a decision based on the state and screen
-# ... AI logic here ...
 
 # Execute an action
 requests.post(f"{BASE_URL}/button", json={"button": "a"})
@@ -157,9 +153,18 @@ requests.post(f"{BASE_URL}/button", json={"button": "a"})
 - `events.json`: Pokemon game event flags
 - `map_data.json`: Map location data
 
+## Things to implement
+
+- [ ] Add Pokemon Index and Pokedex information
+- [ ] Bring in map stitching information into the API
+- [ ] Add more event flags and game state information
+- [ ] Add more Pokemon-specific helper functions
+
 ## License
 
 This project is for educational and research purposes only. Pokemon is a trademark of Nintendo/Game Freak.
+
+The code is licensed under the MIT License.
 
 ## Acknowledgements
 
