@@ -15,20 +15,21 @@
             --text-dim: #7a9d0e;
             --button-hover: #306230;
             --shadow: rgba(0, 0, 0, 0.3);
-            --gameboy-width: min(90vw, 800px);
-            --gameboy-height: min(80vh, 600px);
+            /* Fixed Gameboy Size */
+            --gameboy-width: 700px;
+            --gameboy-height: 550px;
         }
-        
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        
+
         html {
             font-size: 62.5%; /* 10px at default browser settings */
         }
-        
+
         body {
             background-color: var(--primary-bg);
             font-family: 'Press Start 2P', cursive, sans-serif;
@@ -39,7 +40,7 @@
             align-items: center;
             justify-content: center;
         }
-        
+
         .gameboy-container {
             background-color: var(--container-bg);
             border-radius: 1.5rem;
@@ -47,21 +48,23 @@
             box-shadow: 0.5rem 0.5rem 1.5rem var(--shadow);
             display: flex;
             flex-direction: column;
+            /* Apply Fixed Size */
             width: var(--gameboy-width);
             height: var(--gameboy-height);
+            max-width: 95vw; /* Allow shrinking on very small screens */
+            max-height: 90vh;
             margin: 0 auto;
             overflow: hidden;
         }
-        
+
         .screens-container {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-            flex: 1;
-            height: calc(100% - 5rem); /* Account for controls */
+            flex: 1; /* Takes up remaining space */
+            height: 100%; /* Ensure it fills the container */
             overflow: hidden;
         }
-        
+
         .screen {
             background-color: var(--screen-bg);
             border: 0.8rem solid var(--screen-border);
@@ -71,128 +74,55 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-        }
-        
-        .thoughts-screen {
-            flex: 3;
-            max-height: 70%;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .memory-screen {
+            /* Make the single screen fill the container */
             flex: 1;
-            max-height: 25%;
-            min-height: 80px;
-            display: flex;
-            flex-direction: column;
+            height: 100%;
         }
-        
-        .memory-content {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            max-height: calc(100% - 2.5rem);
-        }
-        
+
         .thoughts-display {
-            flex: 1;
+            flex: 1; /* Allow scrolling area to fill space */
             overflow-y: auto;
             padding: 1rem;
             color: var(--text-color);
-            font-size: clamp(0.8rem, 1vw, 1.6rem);
+            font-size: clamp(1.0rem, 1.2vw, 1.6rem); /* Slightly larger base size */
             line-height: 1.6;
             scrollbar-width: thin;
             scrollbar-color: var(--screen-border) var(--screen-bg);
-            max-height: 100%;
+            max-height: calc(100% - 4rem); /* Adjust for title */
         }
-        
-        .memory-display {
-            color: var(--text-color);
-            line-height: 1.2;
-            word-wrap: break-word;
-            white-space: pre-wrap;
-            text-align: left;
-            height: auto;
-            width: 100%;
-            padding: 0.5rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 4;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .thoughts-display::-webkit-scrollbar,
-        .memory-display::-webkit-scrollbar {
-            width: 0.8rem;
-        }
-        
-        .thoughts-display::-webkit-scrollbar-track,
-        .memory-display::-webkit-scrollbar-track {
-            background: var(--screen-bg);
-        }
-        
-        .thoughts-display::-webkit-scrollbar-thumb,
-        .memory-display::-webkit-scrollbar-thumb {
+
+        .thoughts-display::-webkit-scrollbar { width: 0.8rem; }
+        .thoughts-display::-webkit-scrollbar-track { background: var(--screen-bg); }
+        .thoughts-display::-webkit-scrollbar-thumb {
             background-color: var(--screen-border);
             border-radius: 0.4rem;
         }
-        
+
         .screen-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             pointer-events: none;
         }
-        
+
         .thought-item {
             margin-bottom: 1.6rem;
             padding-bottom: 1.6rem;
             border-bottom: 0.2rem dashed var(--screen-border);
             animation: fadeIn 0.5s ease-in;
         }
-        
+
         .thought-time {
-            font-size: clamp(0.6rem, 0.8vw, 0.9rem);
+            font-size: clamp(0.8rem, 1vw, 1.1rem);
             color: var(--text-dim);
             margin-bottom: 0.5rem;
         }
-        
+
         .thought-content {
             word-wrap: break-word;
             white-space: pre-wrap;
-            font-size: clamp(0.8rem, 1vw, 1.4rem);
+            font-size: clamp(1.0rem, 1.2vw, 1.5rem);
         }
-        
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-        
-        .control-button {
-            background-color: var(--screen-bg);
-            color: var(--text-color);
-            font-family: 'Press Start 2P', cursive;
-            padding: 0.8rem 1.5rem;
-            border: none;
-            border-radius: 0.5rem;
-            cursor: pointer;
-            font-size: clamp(1rem, 1.2vw, 1.3rem);
-            transition: background-color 0.2s;
-        }
-        
-        .control-button:hover {
-            background-color: var(--button-hover);
-        }
-        
+
         .blink-cursor {
             display: inline-block;
             width: 0.8rem;
@@ -201,61 +131,34 @@
             margin-left: 0.2rem;
             animation: blink 1s step-end infinite;
         }
-        
+
         .section-title {
             text-align: center;
             margin: 0.5rem 0 1rem 0;
             text-transform: uppercase;
-            font-size: clamp(1rem, 1.3vw, 1.4rem);
+            font-size: clamp(1.1rem, 1.4vw, 1.5rem);
             color: var(--text-dim);
             padding: 0.5rem;
             background-color: rgba(15, 56, 15, 0.5);
             border-radius: 0.4rem;
+            flex-shrink: 0; /* Prevent title from shrinking */
         }
-        
-        @keyframes blink {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0;
-            }
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(1rem);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(1rem); } to { opacity: 1; transform: translateY(0); } }
+
         .pixelated-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
             background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQIW2NkYGD4z8DAwMAAABgAAW2G/tMAAAAASUVORK5CYII=');
             background-repeat: repeat;
-            pointer-events: none;
             opacity: 0.03;
         }
-        
+
         .screen-glare {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
             height: 4rem;
             background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
-            pointer-events: none;
             border-radius: 0.5rem 0.5rem 0 0;
         }
-        
+
         .navigation-links {
             display: flex;
             justify-content: center;
@@ -263,7 +166,7 @@
             gap: 1rem;
             flex-wrap: wrap;
         }
-        
+
         .nav-button {
             padding: 1rem 1.5rem;
             background-color: var(--screen-border);
@@ -276,84 +179,29 @@
             text-align: center;
             transition: background-color 0.2s;
         }
-        
-        .nav-button:hover {
-            background-color: var(--primary-bg);
-        }
-        
-        @media (max-width: 768px) {
-            .gameboy-container {
+        .nav-button:hover { background-color: var(--primary-bg); }
+
+        /* Responsive adjustments primarily for very small screens */
+        @media (max-width: 750px) { /* Adjust breakpoint based on fixed width */
+             .gameboy-container {
                 padding: 1.2rem;
+                width: 95vw; /* Allow container to shrink */
+                height: auto; /* Adjust height proportionally */
+                min-height: 400px;
             }
-            
-            .controls {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .control-button {
-                width: 100%;
-                max-width: 30rem;
-                font-size: 0.9rem;
-            }
-            
-            .blink-cursor {
-                width: 0.6rem;
-                height: 1rem;
-            }
-            
-            .screens-container {
-                gap: 1rem;
-            }
-            
-            .screen {
-                border-width: 0.6rem;
-                padding: 0.8rem;
-            }
-            
-            .memory-display {
-                font-size: 0.7rem;
-            }
+             .navigation-links { flex-direction: column; align-items: center; }
+             .nav-button { width: 90%; max-width: 30rem; }
+             .section-title { font-size: 1.0rem; }
+             .thought-content { font-size: 1.0rem; }
+             .thought-time { font-size: 0.8rem; }
         }
-        
-        @media (max-width: 480px) {
-            body {
-                padding: 0.8rem;
-            }
-            
-            .gameboy-container {
-                padding: 0.8rem;
-                border-radius: 1rem;
-            }
-            
-            .navigation-links {
-                flex-direction: column;
-                align-items: center;
-                margin-bottom: 1rem;
-            }
-            
-            .nav-button {
-                width: 100%;
-                max-width: 30rem;
-                font-size: 0.8rem;
-                padding: 0.8rem 1rem;
-            }
-            
-            .thought-item {
-                margin-bottom: 0.8rem;
-                padding-bottom: 0.8rem;
-            }
-            
-            .section-title {
-                font-size: 0.9rem;
-                margin: 0.3rem 0 0.5rem 0;
-            }
-            
-            .memory-display {
-                font-size: 0.65rem;
-                padding: 0.3rem;
-            }
-        }
+         @media (max-height: 600px) {
+             .gameboy-container {
+                 height: 90vh; /* Allow container to shrink vertically */
+                 width: auto; /* Adjust width proportionally */
+                 min-width: 300px;
+             }
+         }
     </style>
 </head>
 <body>
@@ -361,7 +209,7 @@
         <a href="/" class="nav-button">GAME VIEW</a>
         <a href="/controller" class="nav-button">CONTROLLER</a>
     </div>
-    
+
     <div class="gameboy-container">
         <div class="screens-container">
             <!-- Thoughts Screen -->
@@ -378,232 +226,119 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Memory Screen -->
-            <div class="screen memory-screen">
-                <div class="screen-overlay pixelated-overlay"></div>
-                <div class="screen-overlay screen-glare"></div>
-                <div class="section-title">Memory System</div>
-                <div class="memory-content">
-                    <div class="memory-display" id="memory-display">
-                        Initializing memory system...<span class="blink-cursor"></span>
-                    </div>
-                </div>
-            </div>
+            <!-- Memory Screen Removed -->
         </div>
     </div>
 
     <!-- Socket.IO script -->
     <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
-    
+
     <script>
-        // Wait for DOM to be fully loaded
         document.addEventListener('DOMContentLoaded', () => {
             let thoughtsArray = [];
             const thoughtsDisplay = document.getElementById('thoughts-display');
-            const memoryDisplay = document.getElementById('memory-display');
-            
-            // Set fixed gameboy dimensions and make text fit
-            function setFixedGameboySize() {
-                const container = document.querySelector('.gameboy-container');
-                const computedStyle = window.getComputedStyle(container);
-                const width = computedStyle.getPropertyValue('width');
-                const height = computedStyle.getPropertyValue('height');
-                
-                container.style.width = width;
-                container.style.height = height;
-                
-                // Make sure text fits in memory display
-                setTimeout(fitTextToContainer, 100);
-                
-                // Add resize listener for when orientation changes
-                window.addEventListener('resize', function() {
-                    // Adjust the fixed size on resize to maintain responsiveness
-                    const newWidth = getComputedValue('--gameboy-width');
-                    const newHeight = getComputedValue('--gameboy-height');
-                    
-                    container.style.width = newWidth;
-                    container.style.height = newHeight;
-                    
-                    // Delay to let the browser settle after resize
-                    setTimeout(fitTextToContainer, 200);
-                });
-            }
-            
-            // Helper function to get computed CSS variable value
-            function getComputedValue(variable) {
-                return getComputedStyle(document.documentElement).getPropertyValue(variable);
-            }
-            
-            // Set fixed dimensions after page loads
-            window.addEventListener('load', setFixedGameboySize);
-            
+
             console.log("Initializing agent thoughts page...");
-            
+
             // Set up WebSocket connection
             const socket = io();
-            
-            // Debug socket connection status
+
             socket.on('connect', () => {
                 console.log("Socket connected:", socket.id);
                 addThought("WebSocket connected. Waiting for agent thoughts...");
-                updateMemory();
             });
-            
+
             socket.on('disconnect', () => {
                 console.log("Socket disconnected");
                 addThought("WebSocket disconnected. Reconnecting...");
             });
-            
+
             socket.on('agent_thought', (data) => {
                 console.log("Received thought:", data);
                 addThought(data.thought);
             });
-            
-            // Listen for memory updates
-            socket.on('agent_memory', (data) => {
-                updateMemoryDisplay(data.memory);
-            });
-            
+
+            // Removed memory-related socket listener
+
             // Function to add a new thought
             function addThought(thoughtText) {
                 const now = new Date();
                 const timeString = now.toTimeString().split(' ')[0];
-                
+
                 thoughtsArray.push({
                     time: timeString,
                     content: thoughtText
                 });
-                
+
                 // Keep array at reasonable size
                 if (thoughtsArray.length > 100) {
                     thoughtsArray.shift();
                 }
-                
+
                 renderThoughts();
             }
-            
+
             // Render all thoughts
             function renderThoughts() {
-                thoughtsDisplay.innerHTML = '';
-                
+                const shouldScroll = thoughtsDisplay.scrollTop + thoughtsDisplay.clientHeight >= thoughtsDisplay.scrollHeight - 20; // Check if scrolled near bottom
+
+                thoughtsDisplay.innerHTML = ''; // Clear previous thoughts
+
                 thoughtsArray.forEach(thought => {
                     const thoughtElement = document.createElement('div');
                     thoughtElement.className = 'thought-item';
-                    
+
                     const timeElement = document.createElement('div');
                     timeElement.className = 'thought-time';
                     timeElement.textContent = thought.time;
-                    
+
                     const contentElement = document.createElement('div');
                     contentElement.className = 'thought-content';
-                    contentElement.textContent = thought.content;
-                    
+                    contentElement.textContent = thought.content; // Use textContent for safety
+
                     thoughtElement.appendChild(timeElement);
                     thoughtElement.appendChild(contentElement);
                     thoughtsDisplay.appendChild(thoughtElement);
                 });
-                
+
                 // Add blinking cursor to the last thought
-                if (thoughtsArray.length > 0) {
-                    const lastThought = thoughtsDisplay.lastElementChild.querySelector('.thought-content');
+                const lastThoughtContent = thoughtsDisplay.querySelector('.thought-item:last-child .thought-content');
+                if (lastThoughtContent) {
+                    // Remove existing cursor if any (e.g., during rapid updates)
+                    const existingCursor = lastThoughtContent.querySelector('.blink-cursor');
+                    if(existingCursor) existingCursor.remove();
+
                     const cursor = document.createElement('span');
                     cursor.className = 'blink-cursor';
-                    lastThought.appendChild(cursor);
+                    lastThoughtContent.appendChild(cursor);
                 }
-                thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
-            }
-            
-            // Update the memory display with fixed text sizing
-            function updateMemoryDisplay(memory) {
-                // Remove any existing cursor
-                const existingCursor = memoryDisplay.querySelector('.blink-cursor');
-                if (existingCursor) {
-                    existingCursor.remove();
+
+                // Auto-scroll only if user was already near the bottom
+                if (shouldScroll) {
+                    thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
                 }
-                
-                memoryDisplay.textContent = memory || "No memory stored.";
-                
-                // Apply text scaling to fit container after a small delay to ensure DOM is updated
-                setTimeout(fitTextToContainer, 10);
-                
-                // Add blinking cursor at the end
-                setTimeout(() => {
-                    // Only add cursor if it doesn't already exist
-                    if (!memoryDisplay.querySelector('.blink-cursor')) {
-                        const cursor = document.createElement('span');
-                        cursor.className = 'blink-cursor';
-                        memoryDisplay.appendChild(cursor);
-                    }
-                }, 20);
             }
-            
-            // Function to scale memory text to fit container
-            function fitTextToContainer() {
-                const memoryScreen = document.querySelector('.memory-screen');
-                const memoryContent = document.querySelector('.memory-content');
-                const memoryDisplay = document.querySelector('.memory-display');
-                
-                if (!memoryScreen || !memoryContent || !memoryDisplay) return;
-                
-                // Calculate line height based on container height
-                const titleHeight = memoryScreen.querySelector('.section-title').offsetHeight;
-                const availableHeight = memoryScreen.clientHeight - titleHeight - 20; // 20px buffer
-                
-                // Start with a reasonable font size (responsive to screen size)
-                const containerWidth = memoryScreen.clientWidth;
-                let fontSize;
-                
-                // Scale font size based on container width
-                if (containerWidth < 300) {
-                    fontSize = 0.8; // Very small screens
-                } else if (containerWidth < 500) {
-                    fontSize = 1.0; // Small screens
-                } else {
-                    fontSize = 1.2; // Normal screens
-                }
-                
-                // Apply font size
-                memoryDisplay.style.fontSize = `${fontSize}rem`;
-                
-                // Set line-clamp based on available height
-                const lineHeight = parseFloat(getComputedStyle(memoryDisplay).lineHeight);
-                const maxLines = Math.floor(availableHeight / lineHeight);
-                
-                // Set appropriate number of lines to display
-                if (maxLines > 0) {
-                    memoryDisplay.style.webkitLineClamp = maxLines;
-                    memoryDisplay.style.maxHeight = `${maxLines * lineHeight}px`;
-                }
-                
-                console.log("Memory text fitted: font size =", fontSize + "rem", "max lines =", maxLines);
-            }
-            
-            // Fetch and update memory
-            function updateMemory() {
-                fetch('/api/agent/memory')
-                    .then(response => response.json())
-                    .then(data => {
-                        updateMemoryDisplay(data.memory);
-                    })
-                    .catch(error => {
-                        console.error('Error updating memory:', error);
-                        updateMemoryDisplay("Error: Could not fetch memory.");
-                    });
-            }
-            
-            
-            // Fetch initial thoughts if any
+
+            // Removed memory update functions
+
+            // Fetch initial thoughts
             fetch('/api/agent/thoughts')
                 .then(response => response.json())
                 .then(data => {
                     console.log("Fetched initial thoughts:", data);
                     if (data.thoughts && data.thoughts.length > 0) {
-                        thoughtsArray = data.thoughts.map(t => ({
-                            time: new Date(t.timestamp).toTimeString().split(' ')[0],
-                            content: t.content
-                        }));
+                        // Map and sort by timestamp just in case they arrive out of order
+                        thoughtsArray = data.thoughts
+                            .map(t => ({
+                                time: new Date(t.timestamp).toTimeString().split(' ')[0],
+                                content: t.content,
+                                timestamp: new Date(t.timestamp) // Keep original timestamp for sorting
+                            }))
+                            .sort((a, b) => a.timestamp - b.timestamp);
+
                         renderThoughts();
+                         // Scroll to bottom after initial load
+                         thoughtsDisplay.scrollTop = thoughtsDisplay.scrollHeight;
                     } else {
                         addThought("No thoughts recorded yet. Waiting for agent activity...");
                     }
@@ -612,9 +347,8 @@
                     console.error('Error fetching thoughts:', error);
                     addThought("Error connecting to server. Please try again later.");
                 });
-            
-            // Initial memory load
-            updateMemory();
+
+            // Removed initial memory load
         });
     </script>
 </body>

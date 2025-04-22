@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokeAgent - Memory System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #9bbc0f;
+            --container-bg: #a4c2a8;
+            --screen-bg: #0f380f;
+            --screen-border: #8bac0f;
+            --text-color: #9bbc0f;
+            --text-dim: #7a9d0e;
+            --button-hover: #306230;
+            --shadow: rgba(0, 0, 0, 0.3);
+             /* Fixed Gameboy Size */
+            --gameboy-width: 700px;
+            --gameboy-height: 550px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 62.5%; /* 10px at default browser settings */
+        }
+
+        body {
+            background-color: var(--primary-bg);
+            font-family: 'Press Start 2P', cursive, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gameboy-container {
+            background-color: var(--container-bg);
+            border-radius: 1.5rem;
+            padding: 2rem;
+            box-shadow: 0.5rem 0.5rem 1.5rem var(--shadow);
+            display: flex;
+            flex-direction: column;
+            /* Apply Fixed Size */
+            width: var(--gameboy-width);
+            height: var(--gameboy-height);
+            max-width: 95vw; /* Allow shrinking on very small screens */
+            max-height: 90vh;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .screens-container {
+            display: flex;
+            flex-direction: column;
+            flex: 1; /* Takes up remaining space */
+            height: 100%; /* Ensure it fills the container */
+            overflow: hidden;
+        }
+
+        .screen {
+            background-color: var(--screen-bg);
+            border: 0.8rem solid var(--screen-border);
+            border-radius: 1rem;
+            padding: 1rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* Make the single screen fill the container */
+            flex: 1;
+            height: 100%;
+        }
+
+        /* Memory Specific Styling */
+        .memory-content {
+            display: flex; /* Use flexbox */
+            flex-direction: column; /* Stack vertically */
+            flex: 1; /* Allow content to fill space below title */
+            overflow: hidden; /* Important for text fitting */
+            position: relative; /* For cursor positioning if needed */
+        }
+
+        .memory-display {
+            color: var(--text-color);
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            text-align: left;
+            width: 100%;
+            height: 100%; /* Fill the memory-content area */
+            padding: 1rem; /* Add some padding */
+            overflow: hidden; /* Hide overflow */
+            font-size: 1.4rem; /* Start with a base size */
+            line-height: 1.5; /* Adjust line height */
+            /* We will adjust font-size dynamically */
+            display: flex; /* Use flexbox for vertical centering (optional) */
+            align-items: flex-start; /* Align text to top */
+            justify-content: flex-start; /* Align text to left */
+        }
+
+
+        .screen-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+        }
+
+        .blink-cursor {
+            display: inline-block;
+            width: 0.8rem; /* Adjust if needed based on final font size */
+            height: 1.4rem; /* Adjust if needed based on final font size */
+            background-color: var(--text-color);
+            margin-left: 0.2rem;
+            animation: blink 1s step-end infinite;
+            vertical-align: baseline; /* Align cursor with text */
+        }
+
+        .section-title {
+            text-align: center;
+            margin: 0.5rem 0 1rem 0;
+            text-transform: uppercase;
+            font-size: clamp(1.1rem, 1.4vw, 1.5rem);
+            color: var(--text-dim);
+            padding: 0.5rem;
+            background-color: rgba(15, 56, 15, 0.5);
+            border-radius: 0.4rem;
+            flex-shrink: 0; /* Prevent title from shrinking */
+        }
+
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .pixelated-overlay {
+            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAEUlEQVQIW2NkYGD4z8DAwMAAABgAAW2G/tMAAAAASUVORK5CYII=');
+            background-repeat: repeat;
+            opacity: 0.03;
+        }
+
+        .screen-glare {
+            height: 4rem;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+
+        .navigation-links {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-button {
+            padding: 1rem 1.5rem;
+            background-color: var(--screen-border);
+            color: var(--screen-bg);
+            border: none;
+            border-radius: 0.5rem;
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(0.9rem, 1.1vw, 1.2rem);
+            text-decoration: none;
+            text-align: center;
+            transition: background-color 0.2s;
+        }
+        .nav-button:hover { background-color: var(--primary-bg); }
+
+         /* Responsive adjustments primarily for very small screens */
+        @media (max-width: 750px) { /* Adjust breakpoint based on fixed width */
+             .gameboy-container {
+                padding: 1.2rem;
+                width: 95vw; /* Allow container to shrink */
+                height: auto; /* Adjust height proportionally */
+                min-height: 400px;
+            }
+             .navigation-links { flex-direction: column; align-items: center; }
+             .nav-button { width: 90%; max-width: 30rem; }
+             .section-title { font-size: 1.0rem; }
+            /* Let JS handle memory font size reduction */
+        }
+         @media (max-height: 600px) {
+             .gameboy-container {
+                 height: 90vh; /* Allow container to shrink vertically */
+                 width: auto; /* Adjust width proportionally */
+                 min-width: 300px;
+             }
+             /* Let JS handle memory font size reduction */
+         }
+
+    </style>
+</head>
+<body>
+    <div class="navigation-links">
+        <a href="/" class="nav-button">GAME VIEW</a>
+        <a href="/controller" class="nav-button">CONTROLLER</a>
+    </div>
+
+    <div class="gameboy-container">
+        <div class="screens-container">
+            <!-- Thoughts Screen Removed -->
+
+            <!-- Memory Screen -->
+            <div class="screen memory-screen">
+                <div class="screen-overlay pixelated-overlay"></div>
+                <div class="screen-overlay screen-glare"></div>
+                <div class="section-title">Memory System</div>
+                <div class="memory-content">
+                    <div class="memory-display" id="memory-display">
+                        Initializing memory system...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.IO script -->
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const memoryDisplay = document.getElementById('memory-display');
+            const memoryContent = document.querySelector('.memory-content'); // Get the container
+
+            console.log("Initializing agent memory page...");
+
+            // Set up WebSocket connection
+            const socket = io();
+
+            socket.on('connect', () => {
+                console.log("Socket connected:", socket.id);
+                updateMemoryDisplay("WebSocket connected. Waiting for memory updates...");
+                updateMemory(); // Fetch initial memory on connect
+            });
+
+            socket.on('disconnect', () => {
+                console.log("Socket disconnected");
+                updateMemoryDisplay("WebSocket disconnected. Reconnecting...");
+            });
+
+            // Removed thoughts-related socket listener
+
+            // Listen for memory updates
+            socket.on('agent_memory', (data) => {
+                console.log("Received memory update:", data);
+                updateMemoryDisplay(data.memory);
+            });
+
+            // Update the memory display and fit text
+            function updateMemoryDisplay(memory) {
+                memoryDisplay.textContent = memory || "No memory stored.";
+                fitTextToContainer(); // Fit text after content update
+                appendBlinkingCursor(); // Add cursor after fitting
+            }
+
+             // Append blinking cursor utility
+             function appendBlinkingCursor() {
+                 // Remove existing cursor first
+                 const existingCursor = memoryDisplay.querySelector('.blink-cursor');
+                 if (existingCursor) {
+                     existingCursor.remove();
+                 }
+                 // Create and append new cursor
+                 const cursor = document.createElement('span');
+                 cursor.className = 'blink-cursor';
+                 // Append cursor directly to memoryDisplay
+                 memoryDisplay.appendChild(cursor);
+                 // Adjust cursor size based on current font size
+                 const currentFontSize = parseFloat(window.getComputedStyle(memoryDisplay).fontSize);
+                 cursor.style.height = `${currentFontSize * 1.0}px`; // Match font height
+                 cursor.style.width = `${currentFontSize * 0.5}px`; // Approx width
+             }
+
+            // Function to scale memory text font size to fit container
+            function fitTextToContainer() {
+                const container = memoryContent; // Use the direct parent for available space
+                const element = memoryDisplay;
+
+                if (!container || !element) return;
+
+                // Reset font size to a maximum reasonable value before calculating fit
+                let maxFontSize = 16; // Max font size in px (1.6rem)
+                let minFontSize = 8;  // Min font size in px (0.8rem)
+                let currentFontSize = maxFontSize;
+
+                element.style.fontSize = `${currentFontSize}px`;
+
+                // Check for overflow and decrease font size until it fits or hits minimum
+                // Check both vertical and horizontal overflow
+                while (
+                    (element.scrollHeight > container.clientHeight || element.scrollWidth > container.clientWidth) &&
+                    currentFontSize > minFontSize
+                ) {
+                    currentFontSize -= 0.5; // Decrease font size gradually
+                    element.style.fontSize = `${currentFontSize}px`;
+                }
+
+                // Final check: if even min size overflows, just keep min size
+                 if (currentFontSize <= minFontSize && (element.scrollHeight > container.clientHeight || element.scrollWidth > container.clientWidth)) {
+                     element.style.fontSize = `${minFontSize}px`;
+                     // Optional: Add ellipsis or other indicator if desired
+                     console.warn("Memory content overflows even at minimum font size.");
+                 }
+
+
+                console.log(`Memory text fitted: final font size = ${element.style.fontSize}`);
+            }
+
+            // Fetch and update memory
+            function updateMemory() {
+                fetch('/api/agent/memory')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateMemoryDisplay(data.memory);
+                    })
+                    .catch(error => {
+                        console.error('Error updating memory:', error);
+                        updateMemoryDisplay("Error: Could not fetch memory.");
+                    });
+            }
+
+            // Removed initial thoughts fetch
+
+            // Initial memory load
+            updateMemory();
+
+            // Add resize listener to refit text if window size changes
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                 // Debounce resize event
+                 clearTimeout(resizeTimeout);
+                 resizeTimeout = setTimeout(() => {
+                      console.log("Window resized, refitting memory text...");
+                      fitTextToContainer();
+                      appendBlinkingCursor(); // Re-append cursor after fitting
+                 }, 250); // Wait 250ms after last resize event
+            });
+
+            // Ensure initial fit after styles are applied
+            window.addEventListener('load', () => {
+                setTimeout(() => { // Delay slightly ensures layout is stable
+                    fitTextToContainer();
+                    appendBlinkingCursor();
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>

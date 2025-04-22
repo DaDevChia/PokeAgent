@@ -10,55 +10,70 @@
             background-color: #f0f0f0;
             font-family: 'Press Start 2P', cursive, sans-serif;
         }
-        
+
         .gameboy-container {
-            width: 400px;
+            width: 400px; /* Keep the overall container size fixed */
             margin: 20px auto;
             background-color: #a4c2a8;
             border-radius: 10px;
             padding: 20px;
             box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.3);
         }
-        
+
         .screen-container {
             background-color: #0f380f;
             border: 10px solid #8bac0f;
             border-radius: 10px;
-            padding: 10px;
+            padding: 10px; /* Padding inside the border */
             margin-bottom: 20px;
             color: #9bbc0f;
-            min-height: 400px;
-            font-family: monospace;
+            /* --- FIXED SIZE --- */
+            width: 360px; /* Fixed width (400px container - 2*20px padding) */
+            height: 400px; /* Fixed height */
+            overflow: hidden; /* Prevent content overflow */
+            /* --- End Fixed Size --- */
+            font-family: monospace; /* Use monospace for state display */
             position: relative;
-            display: flex;
-            flex-direction: column;
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Stack title and state vertically */
+            box-sizing: border-box; /* Include padding and border in width/height */
         }
-        
+
+        /* Remove #game-screen related styles if it's not used for images */
+        /*
         #game-screen {
             max-height: 100%;
             max-width: 100%;
             image-rendering: pixelated;
         }
-        
+        */
+
         .state-display {
-            flex: 1;
-            padding: 8px;
-            color: #9bbc0f;
-            line-height: 1.5;
-            overflow: hidden;
+            flex: 1; /* Allow this div to grow and fill available space */
+            position: relative; /* Needed for child positioning/sizing */
+            overflow: hidden; /* Hide any overflow from the pre tag */
+            padding: 0; /* Remove padding if pre fills it, or keep small padding */
+            /* Removed padding: 8px; to let pre use full space */
         }
-        
-        pre {
+
+        pre#state-json { /* Target the pre tag directly */
             margin: 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            font-family: 'Press Start 2P', monospace;
-            width: 100%;
-            height: 100%;
+            white-space: pre-wrap;   /* Allow wrapping */
+            word-wrap: break-word; /* Break long words */
+            font-family: 'Press Start 2P', monospace; /* Keep specific font */
+            width: 100%;            /* Fill width of parent (.state-display) */
+            height: 100%;           /* Fill height of parent (.state-display) */
             text-align: left;
+            color: #9bbc0f;
+            line-height: 1.2; /* Adjust line height for better packing */
             /* Font size will be controlled by JavaScript */
+            font-size: 10px; /* Start with a default size */
+            overflow: hidden; /* Prevent scrollbars on the pre itself */
+            /* Add a small padding inside the pre if desired */
+            padding: 5px;
+            box-sizing: border-box; /* Include padding in width/height */
         }
-        
+
         .pixelated-overlay {
             position: absolute;
             top: 0;
@@ -71,25 +86,29 @@
             opacity: 0.05;
             z-index: 10;
         }
-        
+
         .screen-title {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px; /* Reduced margin */
+            padding-top: 5px;   /* Add some padding */
             text-transform: uppercase;
-            font-size: 14px;
+            font-size: 12px; /* Slightly smaller title */
+            color: #9bbc0f; /* Match screen text color */
+            flex-shrink: 0; /* Prevent title from shrinking */
         }
-        
-        .controls-container {
+
+        /* ... (rest of the CSS remains the same) ... */
+         .controls-container {
             display: flex;
             justify-content: space-between;
         }
-        
+
         .dpad {
             width: 120px;
             height: 120px;
             position: relative;
         }
-        
+
         .dpad-button {
             width: 40px;
             height: 40px;
@@ -97,38 +116,19 @@
             position: absolute;
             border-radius: 5px;
         }
-        
-        .dpad-up {
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        
-        .dpad-down {
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        
-        .dpad-left {
-            left: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        
-        .dpad-right {
-            right: 0;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        
+
+        .dpad-up { top: 0; left: 50%; transform: translateX(-50%); }
+        .dpad-down { bottom: 0; left: 50%; transform: translateX(-50%); }
+        .dpad-left { left: 0; top: 50%; transform: translateY(-50%); }
+        .dpad-right { right: 0; top: 50%; transform: translateY(-50%); }
+
         .action-buttons {
             display: flex;
             flex-direction: column;
             justify-content: center;
             gap: 10px;
         }
-        
+
         .action-button {
             width: 40px;
             height: 40px;
@@ -140,14 +140,14 @@
             color: white;
             font-weight: bold;
         }
-        
+
         .meta-buttons {
             display: flex;
             justify-content: center;
             gap: 20px;
             margin-top: 20px;
         }
-        
+
         .meta-button {
             width: 60px;
             height: 20px;
@@ -160,19 +160,19 @@
             font-size: 10px;
             transform: rotate(-20deg);
         }
-        
+
         .button-active {
             background-color: #ff0000;
             box-shadow: 0 0 10px 2px rgba(255, 255, 0, 0.7);
         }
-        
+
         .navigation-links {
             display: flex;
             justify-content: center;
             margin: 20px 0;
             gap: 20px;
         }
-        
+
         .nav-button {
             padding: 10px 15px;
             background-color: #8bac0f;
@@ -184,12 +184,12 @@
             text-decoration: none;
             text-align: center;
         }
-        
+
         .nav-button:hover {
             background-color: #9bbc0f;
             color: #0f380f;
         }
-        
+
         .control-button {
             background-color: #0f380f;
             color: #9bbc0f;
@@ -201,7 +201,7 @@
             cursor: pointer;
             font-size: 12px;
         }
-        
+
         .control-button:hover {
             background-color: #306230;
         }
@@ -215,7 +215,7 @@
             <a href="/agent/thoughts" class="nav-button">AGENT THOUGHTS</a>
             <a href="/controller" class="nav-button">CONTROLLER</a>
         </div>
-        
+
         <div class="row justify-content-center">
             <div class="col-md-6">
                 <div class="gameboy-container">
@@ -226,7 +226,7 @@
                             <pre id="state-json">Loading game state...</pre>
                         </div>
                     </div>
-                    
+
                     <div class="controls-container">
                         <div class="dpad">
                             <div class="dpad-button dpad-up" id="btn-up"></div>
@@ -234,13 +234,13 @@
                             <div class="dpad-button dpad-down" id="btn-down"></div>
                             <div class="dpad-button dpad-left" id="btn-left"></div>
                         </div>
-                        
+
                         <div class="action-buttons">
                             <div class="action-button" id="btn-b">B</div>
                             <div class="action-button" id="btn-a">A</div>
                         </div>
                     </div>
-                    
+
                     <div class="meta-buttons">
                         <div class="meta-button" id="btn-select">SELECT</div>
                         <div class="meta-button" id="btn-start">START</div>
@@ -256,7 +256,7 @@
         const socket = io();
         const stateJson = document.getElementById('state-json');
         const stateDisplay = document.getElementById('state-display');
-        const gameScreen = document.getElementById('game-screen');
+        // const gameScreen = document.getElementById('game-screen'); // Keep if needed elsewhere
         const buttons = {
             'up': document.getElementById('btn-up'),
             'right': document.getElementById('btn-right'),
@@ -267,54 +267,79 @@
             'select': document.getElementById('btn-select'),
             'start': document.getElementById('btn-start')
         };
-        
+
         // Connect to WebSocket for real-time updates
         socket.on('connect', () => {
             console.log('Connected to server');
-            updateGameState();
+            updateGameState(); // Initial fetch on connect
         });
-        
+
         // Listen for button presses from other clients
         socket.on('button_press', (data) => {
             highlightButton(data.button);
-            // Update state when any button is pressed
-            updateGameState();
+            // Optional: Update state immediately on any button press, or rely on interval
+            // updateGameState();
         });
-        
+
         // Function to update game state
         function updateGameState() {
-            // Update game state JSON
             fetch('/api/state')
                 .then(response => response.json())
                 .then(data => {
                     stateJson.textContent = JSON.stringify(data, null, 2);
-                    fitTextToContainer();
+                    // Ensure text content is updated *before* fitting
+                    requestAnimationFrame(fitTextToContainer); // Use rAF for better timing
                 })
                 .catch(error => {
                     console.error('Error fetching game state:', error);
                     stateJson.textContent = "Error loading game state. Please try again.";
+                     // Also fit error text
+                    requestAnimationFrame(fitTextToContainer);
                 });
         }
-        
-        // Function to fit text to container
+
+        // Function to fit text to container by adjusting font size
         function fitTextToContainer() {
-            // Start with a reasonable size
-            let fontSize = 10;
-            stateJson.style.fontSize = `${fontSize}px`;
-            
-            // Set a maximum width and height (with some margin)
-            const maxHeight = stateDisplay.clientHeight * 0.95;
-            const maxWidth = stateDisplay.clientWidth * 0.95;
-            
-            // Reduce font size until content fits
-            while ((stateJson.scrollHeight > maxHeight || stateJson.scrollWidth > maxWidth) && fontSize > 5) {
-                fontSize -= 0.5;
-                stateJson.style.fontSize = `${fontSize}px`;
+            // Use the container (.state-display) and content (pre#state-json)
+            const container = stateDisplay;
+            const content = stateJson;
+
+            // Get container dimensions (available space)
+            // clientWidth/Height includes padding but not border/scrollbar
+            const availableWidth = container.clientWidth;
+            const availableHeight = container.clientHeight;
+
+            if (availableWidth <= 0 || availableHeight <= 0) {
+                console.warn("Container dimensions are zero, skipping text fit.");
+                return; // Avoid infinite loops if container isn't rendered yet
             }
-            
-            console.log(`Adjusted font size to: ${fontSize}px`);
+
+            // Start with a max font size and decrease
+            let fontSize = 12; // Max font size to try
+            const minFontSize = 4; // Min font size allowed
+            const step = 0.5; // How much to decrease font size each time
+
+            content.style.fontSize = `${fontSize}px`;
+
+            // Check overflow: scrollWidth/Height includes overflow content size
+            // Loop while content is too big AND font size is above minimum
+            while (
+                (content.scrollHeight > availableHeight || content.scrollWidth > availableWidth)
+                 && fontSize > minFontSize
+            ) {
+                fontSize -= step;
+                content.style.fontSize = `${fontSize}px`;
+            }
+
+            // Final check: if even min size overflows, clamp to min size
+            if (fontSize <= minFontSize && (content.scrollHeight > availableHeight || content.scrollWidth > availableWidth)) {
+                 content.style.fontSize = `${minFontSize}px`;
+                 console.warn(`Content still overflows at minimum font size (${minFontSize}px).`);
+            }
+
+            // console.log(`Adjusted font size to: ${fontSize}px`);
         }
-        
+
         // Highlight a button when pressed
         function highlightButton(buttonName) {
             const button = buttons[buttonName];
@@ -325,15 +350,24 @@
                 }, 200);
             }
         }
-        
+
         // Add button press handlers
         Object.keys(buttons).forEach(key => {
             const button = buttons[key];
+            // Use 'mousedown' and 'mouseup' for better visual feedback like holding
+            button.addEventListener('mousedown', () => {
+                sendButtonPress(key);
+                highlightButton(key); // Highlight immediately on press down
+            });
+             // If you want highlight only on click, use 'click' event instead of mousedown/up
+            /*
             button.addEventListener('click', () => {
                 sendButtonPress(key);
+                // Highlight is handled by socket.on('button_press') or highlightButton here
             });
+            */
         });
-        
+
         // Send button press to server
         function sendButtonPress(button) {
             fetch('/api/button', {
@@ -343,24 +377,35 @@
                 },
                 body: JSON.stringify({
                     button: button,
-                    delay: 1
+                    delay: 0.1 // Send a short delay, adjust if needed
                 })
             })
             .then(response => response.json())
             .then(data => console.log('Button press response:', data))
             .catch(error => console.error('Error sending button press:', error));
+
+             // Optionally trigger a state update immediately after sending a button press
+             // Debounce this if button presses are rapid
+             // setTimeout(updateGameState, 150); // Update slightly after press
         }
-        
-        // Initial data load
-        updateGameState();
-        
+
+        // Initial actions on page load
+        fitTextToContainer(); // Fit the initial "Loading..." text
+        // updateGameState(); // Called on socket connect now
+
         // Handle window resize
-        window.addEventListener('resize', fitTextToContainer);
-        
-        // Set up auto-refresh every 5 seconds
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+             // Debounce resize event for performance
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(fitTextToContainer, 100);
+        });
+
+        // Set up auto-refresh interval (adjust timing as needed)
         setInterval(() => {
             updateGameState();
-        }, 5000);
+        }, 5000); // Refresh every 5 seconds
+
     </script>
 </body>
 </html>

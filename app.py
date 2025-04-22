@@ -82,7 +82,7 @@ class PokeAgent:
 
     def _run_emulator(self, rom_path, window_type):
         self.pyboy = PyBoy(rom_path, window=window_type, debug=False, sound_emulated=False)
-        self.pyboy.set_emulation_speed(1)
+        self.pyboy.set_emulation_speed(2)
         self.pyboy.tick()  # Initialization tick
         self.init_lock.set()  # Signal that PyBoy is ready
         min_interval = 0.01  # desired tick interval in seconds
@@ -391,11 +391,16 @@ def get_pokemon_maps():
     return jsonify(agent.pokemon_helper.map_data)
 
 # Agent thoughts show what the agent is thinking
-
 @app.route('/agent/thoughts')
 def agent_thoughts_page():
     """Serve the agent thoughts HTML page."""
     return render_template('agent_thoughts.html')
+
+# Agent memory is a way to store information about the game state and the agent's actions
+@app.route('/agent/memory')
+def agent_memory_page():
+    """Serve the agent memory HTML page."""
+    return render_template('agent_memory.html')
 
 @app.route('/api/agent/thoughts', methods=['GET'])
 def get_agent_thoughts():
